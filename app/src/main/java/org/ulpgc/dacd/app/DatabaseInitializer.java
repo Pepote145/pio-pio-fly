@@ -1,13 +1,15 @@
 package org.ulpgc.dacd.app;
 
+import org.ulpgc.dacd.domain.DatabaseConfig;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 
 public class DatabaseInitializer {
-    public static final String DATABASE_NAME = "pio_pio_fly.db";
-    private static final String DATABASE_URL = "jdbc:sqlite:" + DATABASE_NAME;
+    public static final String DATABASE_NAME = DatabaseConfig.DATABASE_NAME;
+    private static final String DATABASE_URL = DatabaseConfig.DATABASE_URL;
 
     private static final String CREATE_AWAY_MATCHES_TABLE = """
             CREATE TABLE IF NOT EXISTS away_matches (

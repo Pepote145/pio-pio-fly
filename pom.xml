@@ -17,8 +17,10 @@
     </modules>
 
     <properties>
+        <jsoup.version>1.18.3</jsoup.version>
         <maven.compiler.release>21</maven.compiler.release>
         <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
+        <sqlite.jdbc.version>3.53.1.0</sqlite.jdbc.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 

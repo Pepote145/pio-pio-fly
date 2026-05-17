@@ -45,11 +45,27 @@ public class DatabaseInitializer {
             )
             """;
 
+    private static final String CREATE_FLIGHT_INFOS_TABLE = """
+            CREATE TABLE IF NOT EXISTS flight_infos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                flight_number TEXT,
+                airline TEXT,
+                origin_airport TEXT,
+                destination_airport TEXT,
+                scheduled_datetime TEXT,
+                status TEXT,
+                terminal TEXT,
+                source TEXT,
+                captured_at TEXT
+            )
+            """;
+
     public void initializeDatabase() throws SQLException {
         try (Connection connection = DriverManager.getConnection(DATABASE_URL);
              Statement statement = connection.createStatement()) {
             statement.execute(CREATE_AWAY_MATCHES_TABLE);
             statement.execute(CREATE_FLIGHT_OFFERS_TABLE);
+            statement.execute(CREATE_FLIGHT_INFOS_TABLE);
         }
     }
 }

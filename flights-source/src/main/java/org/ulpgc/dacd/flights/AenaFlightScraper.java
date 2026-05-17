@@ -17,15 +17,18 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.net.ssl.SSLHandshakeException;
 
 public class AenaFlightScraper implements FlightInfoScraper {
     private static final String BASE_URL =
             "https://www.aena.es/sites/Satellite?pagename=AENA_ConsultarVuelos";
     private static final String FALLBACK_URL = "https://www.aena.es/es/infovuelos.html";
+    private static final String REFERRER = "https://www.aena.es/";
     private static final String USER_AGENT =
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
                     "(KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36";
     private static final String SOURCE_NAME = "aena.es";
+    private static final int TIMEOUT_MILLIS = 20000;
     private static final Pattern FLIGHT_NUMBER_PATTERN =
             Pattern.compile("\\b([A-Z0-9]{2,3}\\s?\\d{2,4})\\b");
     private static final Pattern TIME_PATTERN =
@@ -65,11 +68,19 @@ public class AenaFlightScraper implements FlightInfoScraper {
             }
             return flights;
         } catch (HttpStatusException e) {
+            printRequestDiagnostic(e.getUrl(), originAirport, destinationAirport, date,
+                    "HTTP " + e.getStatusCode());
             System.out.println("AENA devolvio HTTP " + e.getStatusCode()
                     + " al consultar vuelos entre " + originAirport + " y " + destinationAirport + ".");
             return List.of();
         } catch (IOException e) {
-            System.out.println("No se pudo acceder a AENA para consultar vuelos: " + e.getMessage());
+            if (isSecureConnectionError(e)) {
+                System.out.println("No se pudo establecer conexión segura con AENA desde Java. "
+                        + "Revisa certificados/JDK o prueba inspeccionar la petición real desde el navegador.");
+                return List.of();
+            }
+
+            System.out.println("No se pudo acceder a AENA para consultar vuelos: " + summarizeError(e));
             return List.of();
         }
     }
@@ -89,6 +100,7 @@ public class AenaFlightScraper implements FlightInfoScraper {
             lastHttpStatusException = e;
         } catch (IOException e) {
             lastIOException = e;
+            printRequestDiagnostic(BASE_URL, originAirport, destinationAirport, date, summarizeError(e));
         }
 
         try {
@@ -100,6 +112,7 @@ public class AenaFlightScraper implements FlightInfoScraper {
             lastHttpStatusException = e;
         } catch (IOException e) {
             lastIOException = e;
+            printRequestDiagnostic(FALLBACK_URL, originAirport, destinationAirport, date, summarizeError(e));
         }
 
         if (lastHttpStatusException != null) {
@@ -116,8 +129,12 @@ public class AenaFlightScraper implements FlightInfoScraper {
                                      String date) throws IOException {
         Connection connection = Jsoup.connect(url)
                 .userAgent(USER_AGENT)
-                .timeout(15000)
+                .referrer(REFERRER)
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                .header("Accept-Language", "es-ES,es;q=0.9,en;q=0.8")
+                .timeout(TIMEOUT_MILLIS)
                 .followRedirects(true)
+                .ignoreHttpErrors(true)
                 .ignoreContentType(true)
                 .data("accion", "busqueda")
                 .data("ordenacion", "Vuelo");
@@ -134,6 +151,14 @@ public class AenaFlightScraper implements FlightInfoScraper {
         }
 
         Connection.Response response = connection.execute();
+        if (response.statusCode() >= 400) {
+            throw new HttpStatusException(
+                    "AENA devolvio HTTP " + response.statusCode(),
+                    response.statusCode(),
+                    response.url().toString()
+            );
+        }
+
         String contentType = response.contentType();
         String body = response.body();
         if (body == null || body.isBlank()) {
@@ -345,5 +370,54 @@ public class AenaFlightScraper implements FlightInfoScraper {
                 + String.valueOf(flightInfo.getScheduledDateTime()) + '|'
                 + String.valueOf(flightInfo.getOriginAirport()) + '|'
                 + String.valueOf(flightInfo.getDestinationAirport());
+    }
+
+    private boolean isSecureConnectionError(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof SSLHandshakeException) {
+                return true;
+            }
+
+            String message = current.getMessage();
+            if (message != null) {
+                String normalizedMessage = message.toLowerCase(Locale.ROOT);
+                if (normalizedMessage.contains("pkix")
+                        || normalizedMessage.contains("certificate_unknown")
+                        || normalizedMessage.contains("unable to find valid certification path")) {
+                    return true;
+                }
+            }
+
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    private String summarizeError(Throwable throwable) {
+        Throwable current = throwable;
+        String message = null;
+
+        while (current != null) {
+            if (current.getMessage() != null && !current.getMessage().isBlank()) {
+                message = current.getMessage();
+            }
+            current = current.getCause();
+        }
+
+        if (message == null || message.isBlank()) {
+            return throwable.getClass().getSimpleName();
+        }
+
+        return normalizeSpaces(message);
+    }
+
+    private void printRequestDiagnostic(String url, String originAirport, String destinationAirport,
+                                        String date, String errorSummary) {
+        System.out.println("Diagnostico AENA -> URL: " + url
+                + " | origen: " + originAirport
+                + " | destino: " + destinationAirport
+                + " | fecha: " + date
+                + " | error: " + errorSummary);
     }
 }

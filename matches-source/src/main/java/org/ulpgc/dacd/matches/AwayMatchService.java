@@ -60,9 +60,9 @@ public class AwayMatchService {
 
     private String resolveDestinationAirport(Match match) {
         String airportCode = airportMapping.getAirportCode(match.getHomeTeam());
-        if (airportCode != null) {
-            return airportCode;
+        if (airportCode == null) {
+            System.out.println("No se encontro aeropuerto para el equipo local: " + match.getHomeTeam());
         }
-        return airportMapping.getAirportCode(match.getCity());
+        return airportCode;
     }
 }

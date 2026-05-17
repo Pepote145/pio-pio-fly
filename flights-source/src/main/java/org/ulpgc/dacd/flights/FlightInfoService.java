@@ -72,6 +72,10 @@ public class FlightInfoService {
             }
 
             String date = extractMatchDate(awayMatch);
+            System.out.println("Consultando vuelos AENA: " + ORIGIN_AIRPORT
+                    + " -> " + awayMatch.getDestinationAirport()
+                    + " para " + describeMatch(awayMatch)
+                    + " en fecha " + date + ".");
             List<FlightInfo> flights = flightInfoScraper.fetchFlights(
                     ORIGIN_AIRPORT,
                     awayMatch.getDestinationAirport(),

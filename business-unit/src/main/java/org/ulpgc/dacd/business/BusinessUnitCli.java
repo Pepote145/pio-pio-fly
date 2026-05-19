@@ -9,11 +9,14 @@ public class BusinessUnitCli {
 
     private final DatamartRepository datamartRepository;
     private final EventStoreDatamartLoader eventStoreDatamartLoader;
+    private final BusinessUnitEventSubscriber eventSubscriber;
 
     public BusinessUnitCli(DatamartRepository datamartRepository,
-                           EventStoreDatamartLoader eventStoreDatamartLoader) {
+                           EventStoreDatamartLoader eventStoreDatamartLoader,
+                           BusinessUnitEventSubscriber eventSubscriber) {
         this.datamartRepository = datamartRepository;
         this.eventStoreDatamartLoader = eventStoreDatamartLoader;
+        this.eventSubscriber = eventSubscriber;
     }
 
     public void start() {
@@ -35,6 +38,8 @@ public class BusinessUnitCli {
         System.out.println("3. Ver recomendacion de desplazamiento");
         System.out.println("4. Ver resumen del datamart");
         System.out.println("5. Recargar historicos desde eventstore");
+        System.out.println("6. Iniciar sincronizacion en vivo desde ActiveMQ");
+        System.out.println("7. Detener sincronizacion en vivo");
         System.out.println("0. Salir");
         System.out.print("Selecciona una opcion: ");
     }
@@ -61,7 +66,18 @@ public class BusinessUnitCli {
                 reloadEventStoreHistory();
                 return true;
             }
+            case "6" -> {
+                eventSubscriber.start();
+                return true;
+            }
+            case "7" -> {
+                eventSubscriber.stop();
+                return true;
+            }
             case "0" -> {
+                if (eventSubscriber.isActive()) {
+                    eventSubscriber.stop();
+                }
                 System.out.println("Cerrando PioPioFly Business Unit.");
                 return false;
             }

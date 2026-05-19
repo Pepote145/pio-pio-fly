@@ -20,7 +20,12 @@ public class BusinessUnitApp {
 
         DatamartRepository datamartRepository = new DatamartRepository();
         EventStoreDatamartLoader eventStoreDatamartLoader = new EventStoreDatamartLoader(datamartRepository);
-        BusinessUnitCli cli = new BusinessUnitCli(datamartRepository, eventStoreDatamartLoader);
+        BusinessUnitEventSubscriber eventSubscriber = new BusinessUnitEventSubscriber(
+                BusinessUnitConfig.BROKER_URL,
+                BusinessUnitConfig.CLIENT_ID,
+                datamartRepository
+        );
+        BusinessUnitCli cli = new BusinessUnitCli(datamartRepository, eventStoreDatamartLoader, eventSubscriber);
         cli.start();
     }
 }

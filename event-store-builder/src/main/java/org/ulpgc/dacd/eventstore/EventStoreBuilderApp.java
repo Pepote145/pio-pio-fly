@@ -39,12 +39,8 @@ public class EventStoreBuilderApp {
 
         try {
             subscriber.start();
-            System.out.println("Event Store Builder escuchando eventos. Pulsa Ctrl+C para detener.");
+            System.out.println("Event Store Builder en ejecucion. Pulsa Ctrl+C para detener.");
             shutdownLatch.await();
-        } catch (IllegalStateException e) {
-            System.out.println(e.getMessage());
-            System.out.println("Event Store Builder finalizado porque ActiveMQ no esta disponible.");
-            subscriber.close();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             subscriber.close();

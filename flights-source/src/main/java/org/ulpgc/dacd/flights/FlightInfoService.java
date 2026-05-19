@@ -1,8 +1,11 @@
 package org.ulpgc.dacd.flights;
 
 import org.ulpgc.dacd.domain.DatabaseConfig;
-import org.ulpgc.dacd.domain.Match;
+import org.ulpgc.dacd.domain.EventMessage;
+import org.ulpgc.dacd.domain.EventPublisher;
+import org.ulpgc.dacd.domain.EventTopics;
 import org.ulpgc.dacd.domain.FlightInfo;
+import org.ulpgc.dacd.domain.Match;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -13,11 +16,14 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class FlightInfoService {
     private static final String ORIGIN_AIRPORT = "LPA";
     private static final String MATCH_SOURCE = "laliga.com";
+    private static final String SOURCE_ID = "aena-flights-source";
     private static final String SELECT_AWAY_MATCHES = """
             SELECT
                 external_id,
@@ -48,16 +54,28 @@ public class FlightInfoService {
     private final FlightInfoScraper flightInfoScraper;
     private final FlightInfoRepository flightInfoRepository;
     private final String databaseUrl;
+    private final EventPublisher eventPublisher;
 
     public FlightInfoService(FlightInfoScraper flightInfoScraper, FlightInfoRepository flightInfoRepository) {
-        this(flightInfoScraper, flightInfoRepository, DatabaseConfig.DATABASE_URL);
+        this(flightInfoScraper, flightInfoRepository, DatabaseConfig.DATABASE_URL, null);
+    }
+
+    public FlightInfoService(FlightInfoScraper flightInfoScraper, FlightInfoRepository flightInfoRepository,
+                             EventPublisher eventPublisher) {
+        this(flightInfoScraper, flightInfoRepository, DatabaseConfig.DATABASE_URL, eventPublisher);
     }
 
     public FlightInfoService(FlightInfoScraper flightInfoScraper, FlightInfoRepository flightInfoRepository,
                              String databaseUrl) {
+        this(flightInfoScraper, flightInfoRepository, databaseUrl, null);
+    }
+
+    public FlightInfoService(FlightInfoScraper flightInfoScraper, FlightInfoRepository flightInfoRepository,
+                             String databaseUrl, EventPublisher eventPublisher) {
         this.flightInfoScraper = flightInfoScraper;
         this.flightInfoRepository = flightInfoRepository;
         this.databaseUrl = databaseUrl;
+        this.eventPublisher = eventPublisher;
     }
 
     public int captureFlightsForAwayMatches() throws SQLException {
@@ -95,6 +113,7 @@ public class FlightInfoService {
                 }
 
                 flightInfoRepository.save(flightInfo);
+                publishFlightInfoEvent(flightInfo);
                 insertedFlights++;
                 savedFlightsForMatch++;
             }
@@ -168,5 +187,35 @@ public class FlightInfoService {
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private void publishFlightInfoEvent(FlightInfo flightInfo) {
+        if (eventPublisher == null) {
+            return;
+        }
+
+        try {
+            eventPublisher.publish(EventTopics.FLIGHT_INFO, EventMessage.capturedNow(SOURCE_ID, buildPayload(flightInfo)));
+        } catch (IllegalStateException e) {
+            System.out.println("No se pudo publicar evento FlightInfo en ActiveMQ: " + e.getMessage());
+        }
+    }
+
+    private Map<String, Object> buildPayload(FlightInfo flightInfo) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("flightNumber", flightInfo.getFlightNumber());
+        payload.put("airline", flightInfo.getAirline());
+        payload.put("originAirport", flightInfo.getOriginAirport());
+        payload.put("destinationAirport", flightInfo.getDestinationAirport());
+        payload.put("scheduledDateTime", flightInfo.getScheduledDateTime());
+        payload.put("status", flightInfo.getStatus());
+        payload.put("terminal", flightInfo.getTerminal());
+        payload.put("source", flightInfo.getSource());
+        payload.put("capturedAt", formatDateTime(flightInfo.getCapturedAt()));
+        return payload;
+    }
+
+    private String formatDateTime(LocalDateTime value) {
+        return value != null ? value.toString() : null;
     }
 }

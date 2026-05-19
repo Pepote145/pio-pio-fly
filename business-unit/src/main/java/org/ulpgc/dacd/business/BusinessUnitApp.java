@@ -1,5 +1,7 @@
 package org.ulpgc.dacd.business;
 
+import java.sql.SQLException;
+
 public class BusinessUnitApp {
     public static void main(String[] args) {
         System.out.println("PioPioFly Business Unit iniciada");
@@ -7,7 +9,17 @@ public class BusinessUnitApp {
         System.out.println("Datamart: " + BusinessUnitConfig.DATAMART_DATABASE_URL);
         System.out.println("Event store: " + BusinessUnitConfig.EVENT_STORE_BASE_PATH);
 
-        BusinessUnitCli cli = new BusinessUnitCli();
+        try {
+            DatamartInitializer datamartInitializer = new DatamartInitializer();
+            datamartInitializer.initialize();
+            System.out.println("Datamart preparado correctamente.");
+        } catch (SQLException e) {
+            System.out.println("No se pudo inicializar el datamart: " + e.getMessage());
+            return;
+        }
+
+        DatamartRepository datamartRepository = new DatamartRepository();
+        BusinessUnitCli cli = new BusinessUnitCli(datamartRepository);
         cli.start();
     }
 }

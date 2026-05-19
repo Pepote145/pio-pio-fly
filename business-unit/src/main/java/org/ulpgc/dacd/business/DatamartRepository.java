@@ -38,6 +38,16 @@ public class DatamartRepository {
             )
             WHERE source IS NOT NULL AND TRIM(source) <> ''
             """;
+    private static final String LATEST_AWAY_MATCH_CAPTURED_AT = """
+            SELECT MAX(captured_at)
+            FROM away_matches_datamart
+            WHERE captured_at IS NOT NULL AND TRIM(captured_at) <> ''
+            """;
+    private static final String LATEST_FLIGHT_CAPTURED_AT = """
+            SELECT MAX(captured_at)
+            FROM flight_infos_datamart
+            WHERE captured_at IS NOT NULL AND TRIM(captured_at) <> ''
+            """;
     private static final String UPSERT_AWAY_MATCH = """
             INSERT INTO away_matches_datamart (
                 external_id,
@@ -128,7 +138,9 @@ public class DatamartRepository {
                     queryCount(statement, COUNT_AWAY_MATCHES),
                     queryCount(statement, COUNT_FLIGHTS),
                     queryCount(statement, COUNT_DESTINATIONS),
-                    queryCount(statement, COUNT_SOURCES)
+                    queryCount(statement, COUNT_SOURCES),
+                    queryText(statement, LATEST_AWAY_MATCH_CAPTURED_AT),
+                    queryText(statement, LATEST_FLIGHT_CAPTURED_AT)
             );
         }
     }
@@ -136,6 +148,12 @@ public class DatamartRepository {
     private int queryCount(Statement statement, String sql) throws SQLException {
         try (ResultSet resultSet = statement.executeQuery(sql)) {
             return resultSet.next() ? resultSet.getInt(1) : 0;
+        }
+    }
+
+    private String queryText(Statement statement, String sql) throws SQLException {
+        try (ResultSet resultSet = statement.executeQuery(sql)) {
+            return resultSet.next() ? resultSet.getString(1) : null;
         }
     }
 

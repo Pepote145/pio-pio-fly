@@ -48,6 +48,7 @@ public class BusinessUnitCli {
         System.out.println("5. Recargar historicos desde eventstore");
         System.out.println("6. Iniciar sincronizacion en vivo desde ActiveMQ");
         System.out.println("7. Detener sincronizacion en vivo");
+        System.out.println("8. Ver estado de la unidad de negocio");
         System.out.println("0. Salir");
         System.out.print("Selecciona una opcion: ");
     }
@@ -89,6 +90,10 @@ public class BusinessUnitCli {
                 eventSubscriber.stop();
                 yield true;
             }
+            case 8 -> {
+                showBusinessUnitStatus();
+                yield true;
+            }
             case 0 -> {
                 if (eventSubscriber.isActive()) {
                     eventSubscriber.stop();
@@ -97,7 +102,7 @@ public class BusinessUnitCli {
                 yield false;
             }
             default -> {
-                System.out.println("Opcion no valida. Elige una opcion entre 0 y 7.");
+                System.out.println("Opcion no valida. Elige una opcion entre 0 y 8.");
                 yield true;
             }
         };
@@ -129,6 +134,8 @@ public class BusinessUnitCli {
             System.out.println("- Vuelos disponibles: " + summary.flights());
             System.out.println("- Destinos registrados: " + summary.destinations());
             System.out.println("- Fuentes registradas: " + summary.sources());
+            System.out.println("- Ultima captura de partidos: " + display(summary.latestAwayMatchCapturedAt()));
+            System.out.println("- Ultima captura de vuelos: " + display(summary.latestFlightCapturedAt()));
             if (summary.awayMatches() == 0 && summary.flights() == 0) {
                 System.out.println();
                 System.out.println("El datamart esta vacio. Usa la opcion 5 para recargar historicos desde eventstore.");
@@ -255,6 +262,37 @@ public class BusinessUnitCli {
         if (started) {
             System.out.println("Sincronizacion en vivo iniciada. Ejecuta los feeders para recibir nuevos eventos.");
         }
+    }
+
+    private void showBusinessUnitStatus() {
+        try {
+            DatamartSummary summary = datamartRepository.getSummary();
+            System.out.println();
+            System.out.println("Estado de la unidad de negocio:");
+            System.out.println("- Broker ActiveMQ: " + BusinessUnitConfig.BROKER_URL);
+            System.out.println("- Client ID: " + BusinessUnitConfig.CLIENT_ID);
+            System.out.println("- Eventstore: " + BusinessUnitConfig.EVENT_STORE_BASE_PATH);
+            System.out.println("- Datamart: " + BusinessUnitConfig.DATAMART_DATABASE_URL);
+            System.out.println("- Sincronizacion en vivo: " + liveSynchronizationStatus());
+            System.out.println();
+            System.out.println("Resumen actual del datamart:");
+            System.out.println("- Partidos fuera de casa: " + summary.awayMatches());
+            System.out.println("- Vuelos disponibles: " + summary.flights());
+            System.out.println("- Destinos registrados: " + summary.destinations());
+            System.out.println("- Fuentes registradas: " + summary.sources());
+            System.out.println("- Ultima captura de partidos: " + display(summary.latestAwayMatchCapturedAt()));
+            System.out.println("- Ultima captura de vuelos: " + display(summary.latestFlightCapturedAt()));
+            if (summary.awayMatches() == 0 && summary.flights() == 0) {
+                System.out.println();
+                System.out.println("El datamart esta vacio. Usa la opcion 5 para recargar historicos desde eventstore.");
+            }
+        } catch (SQLException e) {
+            System.out.println("No se pudo leer el estado de la unidad de negocio: " + e.getMessage());
+        }
+    }
+
+    private String liveSynchronizationStatus() {
+        return eventSubscriber.isActive() ? "activa" : "detenida";
     }
 
     private void pause(Scanner scanner) {

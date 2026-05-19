@@ -14,6 +14,7 @@
         <module>matches-source</module>
         <module>flights-source</module>
         <module>event-store-builder</module>
+        <module>business-unit</module>
         <module>app</module>
     </modules>
 

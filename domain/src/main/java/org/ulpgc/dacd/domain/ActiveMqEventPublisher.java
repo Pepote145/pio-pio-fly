@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.activemq.ActiveMQConnectionFactory;
 
 import javax.jms.Connection;
+import javax.jms.DeliveryMode;
 import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.MessageProducer;
@@ -55,6 +56,7 @@ public class ActiveMqEventPublisher implements EventPublisher {
         try {
             Destination destination = session.createTopic(topicName);
             producer = session.createProducer(destination);
+            producer.setDeliveryMode(DeliveryMode.PERSISTENT);
             TextMessage message = session.createTextMessage(objectMapper.writeValueAsString(eventMessage));
             producer.send(message);
         } catch (JMSException | JsonProcessingException e) {

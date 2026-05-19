@@ -9,7 +9,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 public class FlightInfoRepository {
-    private static final String INSERT_FLIGHT_INFO = """
+    private static final String UPSERT_FLIGHT_INFO = """
             INSERT INTO flight_infos (
                 flight_number,
                 airline,
@@ -21,6 +21,17 @@ public class FlightInfoRepository {
                 source,
                 captured_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (
+                flight_number,
+                origin_airport,
+                destination_airport,
+                scheduled_datetime,
+                source
+            ) DO UPDATE SET
+                airline = excluded.airline,
+                status = excluded.status,
+                terminal = excluded.terminal,
+                captured_at = excluded.captured_at
             """;
 
     private final String databaseUrl;
@@ -35,7 +46,7 @@ public class FlightInfoRepository {
 
     public void save(FlightInfo flightInfo) throws SQLException {
         try (Connection connection = DriverManager.getConnection(databaseUrl);
-             PreparedStatement statement = connection.prepareStatement(INSERT_FLIGHT_INFO)) {
+             PreparedStatement statement = connection.prepareStatement(UPSERT_FLIGHT_INFO)) {
             statement.setString(1, flightInfo.getFlightNumber());
             statement.setString(2, flightInfo.getAirline());
             statement.setString(3, flightInfo.getOriginAirport());

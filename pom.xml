@@ -17,6 +17,7 @@
     </modules>
 
     <properties>
+        <jackson.version>2.18.2</jackson.version>
         <jsoup.version>1.18.3</jsoup.version>
         <maven.compiler.release>21</maven.compiler.release>
         <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>

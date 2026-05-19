@@ -1,5 +1,7 @@
 package org.ulpgc.dacd.flights;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jsoup.Connection;
 import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
@@ -9,7 +11,13 @@ import org.jsoup.select.Elements;
 import org.ulpgc.dacd.domain.FlightInfo;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -29,6 +37,7 @@ public class AenaFlightScraper implements FlightInfoScraper {
                     "(KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36";
     private static final String SOURCE_NAME = "aena.es";
     private static final int TIMEOUT_MILLIS = 20000;
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final Pattern FLIGHT_NUMBER_PATTERN =
             Pattern.compile("\\b([A-Z0-9]{2,3}\\s?\\d{2,4})\\b");
     private static final Pattern TIME_PATTERN =
@@ -37,6 +46,10 @@ public class AenaFlightScraper implements FlightInfoScraper {
             Pattern.compile("\\b(\\d{2}[/-]\\d{2}[/-]\\d{4})\\s+(\\d{1,2}:\\d{2})\\b");
     private static final Pattern TERMINAL_PATTERN =
             Pattern.compile("\\b(?:terminal|t)\\s*(\\d+)\\b", Pattern.CASE_INSENSITIVE);
+    private static final DateTimeFormatter AENA_DATE_FORMATTER =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.ROOT);
+    private static final DateTimeFormatter AENA_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("HH:mm:ss", Locale.ROOT);
     private static final List<String> STATUS_KEYWORDS = List.of(
             "programado",
             "confirmado",
@@ -56,13 +69,7 @@ public class AenaFlightScraper implements FlightInfoScraper {
     @Override
     public List<FlightInfo> fetchFlights(String originAirport, String destinationAirport, String date) {
         try {
-            Document document = fetchDocument(originAirport, destinationAirport, date);
-            if (document == null) {
-                System.out.println("No se han podido extraer vuelos de AENA con JSoup. Es posible que la web cargue los datos dinámicamente.");
-                return List.of();
-            }
-
-            List<FlightInfo> flights = extractFlights(document, originAirport, destinationAirport, date);
+            List<FlightInfo> flights = fetchRemoteFlights(originAirport, destinationAirport, date);
             if (flights.isEmpty()) {
                 System.out.println("No se han podido extraer vuelos de AENA con JSoup. Es posible que la web cargue los datos dinámicamente.");
             }
@@ -74,6 +81,11 @@ public class AenaFlightScraper implements FlightInfoScraper {
                     + " al consultar vuelos entre " + originAirport + " y " + destinationAirport + ".");
             return List.of();
         } catch (IOException e) {
+            List<FlightInfo> localFlights = fetchLocalDevelopmentFlights(originAirport, destinationAirport);
+            if (!localFlights.isEmpty()) {
+                return localFlights;
+            }
+
             if (isSecureConnectionError(e)) {
                 System.out.println("No se pudo establecer conexión segura con AENA desde Java. "
                         + "Revisa certificados/JDK o prueba inspeccionar la petición real desde el navegador.");
@@ -85,16 +97,17 @@ public class AenaFlightScraper implements FlightInfoScraper {
         }
     }
 
-    private Document fetchDocument(String originAirport, String destinationAirport, String date) throws IOException {
-        Document baseDocument = null;
-        Document fallbackDocument = null;
+    private List<FlightInfo> fetchRemoteFlights(String originAirport, String destinationAirport,
+                                                String date) throws IOException {
+        List<FlightInfo> baseFlights = List.of();
+        List<FlightInfo> fallbackFlights = List.of();
         HttpStatusException lastHttpStatusException = null;
         IOException lastIOException = null;
 
         try {
-            baseDocument = requestDocument(BASE_URL, originAirport, destinationAirport, date);
-            if (containsFlightLikeContent(baseDocument)) {
-                return baseDocument;
+            baseFlights = requestFlights(BASE_URL, originAirport, destinationAirport, date, true);
+            if (!baseFlights.isEmpty()) {
+                return baseFlights;
             }
         } catch (HttpStatusException e) {
             lastHttpStatusException = e;
@@ -104,9 +117,9 @@ public class AenaFlightScraper implements FlightInfoScraper {
         }
 
         try {
-            fallbackDocument = requestDocument(FALLBACK_URL, originAirport, destinationAirport, date);
-            if (containsFlightLikeContent(fallbackDocument)) {
-                return fallbackDocument;
+            fallbackFlights = requestFlights(FALLBACK_URL, originAirport, destinationAirport, date, true);
+            if (!fallbackFlights.isEmpty()) {
+                return fallbackFlights;
             }
         } catch (HttpStatusException e) {
             lastHttpStatusException = e;
@@ -122,11 +135,11 @@ public class AenaFlightScraper implements FlightInfoScraper {
             throw lastIOException;
         }
 
-        return fallbackDocument != null ? fallbackDocument : baseDocument;
+        return !fallbackFlights.isEmpty() ? fallbackFlights : baseFlights;
     }
 
-    private Document requestDocument(String url, String originAirport, String destinationAirport,
-                                     String date) throws IOException {
+    private List<FlightInfo> requestFlights(String url, String originAirport, String destinationAirport,
+                                            String date, boolean filterByRequestedDate) throws IOException {
         Connection connection = Jsoup.connect(url)
                 .userAgent(USER_AGENT)
                 .referrer(REFERRER)
@@ -162,19 +175,170 @@ public class AenaFlightScraper implements FlightInfoScraper {
         String contentType = response.contentType();
         String body = response.body();
         if (body == null || body.isBlank()) {
-            return null;
+            return List.of();
         }
-        if (contentType != null && !contentType.toLowerCase(Locale.ROOT).contains("html")) {
-            return null;
-        }
-        return Jsoup.parse(body, response.url().toString());
+        return extractFlightsFromBody(
+                body,
+                contentType,
+                response.url().toString(),
+                originAirport,
+                destinationAirport,
+                date,
+                filterByRequestedDate
+        );
     }
 
-    private boolean containsFlightLikeContent(Document document) {
-        if (document == null) {
+    private List<FlightInfo> fetchLocalDevelopmentFlights(String originAirport, String destinationAirport) {
+        Path localFile = Path.of("aena_" + destinationAirport.toLowerCase(Locale.ROOT) + ".html");
+        if (!Files.exists(localFile)) {
+            return List.of();
+        }
+
+        try {
+            String body = Files.readString(localFile);
+            List<FlightInfo> flights = extractFlightsFromBody(
+                    body,
+                    null,
+                    localFile.toString(),
+                    originAirport,
+                    destinationAirport,
+                    null,
+                    false
+            );
+            if (!flights.isEmpty()) {
+                System.out.println("Usando archivo local " + localFile
+                        + " como fallback de desarrollo con datos reales de AENA.");
+            }
+            return flights;
+        } catch (IOException e) {
+            System.out.println("No se pudo leer el archivo local de AENA " + localFile + ": " + summarizeError(e));
+            return List.of();
+        }
+    }
+
+    private List<FlightInfo> extractFlightsFromBody(String body, String contentType, String sourceUrl,
+                                                    String originAirport, String destinationAirport,
+                                                    String date, boolean filterByRequestedDate) throws IOException {
+        if (isJsonContent(body, contentType)) {
+            return extractFlightsFromJson(body, originAirport, destinationAirport, date, filterByRequestedDate);
+        }
+
+        Document document = Jsoup.parse(body, sourceUrl);
+        if (!containsFlightLikeContent(document)) {
+            return List.of();
+        }
+        return extractFlights(document, originAirport, destinationAirport, date);
+    }
+
+    private boolean isJsonContent(String body, String contentType) {
+        if (contentType != null && contentType.toLowerCase(Locale.ROOT).contains("json")) {
+            return true;
+        }
+        String trimmedBody = body.trim();
+        return trimmedBody.startsWith("[") || trimmedBody.startsWith("{");
+    }
+
+    private List<FlightInfo> extractFlightsFromJson(String body, String originAirport,
+                                                    String destinationAirport, String date,
+                                                    boolean filterByRequestedDate) throws IOException {
+        JsonNode root = OBJECT_MAPPER.readTree(body);
+        if (!root.isArray()) {
+            return List.of();
+        }
+
+        List<FlightInfo> flights = new ArrayList<>();
+        Set<String> seenKeys = new LinkedHashSet<>();
+        LocalDateTime capturedAt = LocalDateTime.now();
+
+        for (JsonNode node : root) {
+            if (!matchesRoute(node, originAirport, destinationAirport)) {
+                continue;
+            }
+
+            String scheduledDateTime = extractJsonScheduledDateTime(node);
+            if (filterByRequestedDate && date != null && scheduledDateTime != null
+                    && !scheduledDateTime.startsWith(date)) {
+                continue;
+            }
+
+            FlightInfo flightInfo = new FlightInfo(
+                    buildJsonFlightNumber(node),
+                    readJsonText(node, "nombreCompania"),
+                    originAirport,
+                    destinationAirport,
+                    scheduledDateTime,
+                    readJsonText(node, "estado"),
+                    readJsonText(node, "terminal"),
+                    SOURCE_NAME,
+                    capturedAt
+            );
+
+            String uniqueKey = buildUniqueKey(flightInfo);
+            if (seenKeys.add(uniqueKey)) {
+                flights.add(flightInfo);
+            }
+        }
+
+        return flights;
+    }
+
+    private boolean matchesRoute(JsonNode node, String originAirport, String destinationAirport) {
+        String aenaAirport = readJsonText(node, "iataAena");
+        String otherAirport = readJsonText(node, "iataOtro");
+        if (aenaAirport == null || otherAirport == null) {
             return false;
         }
 
+        boolean arrivalAtDestination = destinationAirport.equalsIgnoreCase(aenaAirport)
+                && originAirport.equalsIgnoreCase(otherAirport);
+        boolean departureFromOrigin = originAirport.equalsIgnoreCase(aenaAirport)
+                && destinationAirport.equalsIgnoreCase(otherAirport);
+
+        return arrivalAtDestination || departureFromOrigin;
+    }
+
+    private String buildJsonFlightNumber(JsonNode node) {
+        String flightNumber = readJsonText(node, "numVuelo");
+        String airlineIata = readJsonText(node, "iataCompania");
+        if (flightNumber == null) {
+            return null;
+        }
+        if (airlineIata == null || flightNumber.toUpperCase(Locale.ROOT).startsWith(airlineIata)) {
+            return flightNumber;
+        }
+        return airlineIata + flightNumber;
+    }
+
+    private String extractJsonScheduledDateTime(JsonNode node) {
+        String date = readJsonText(node, "fecha");
+        String time = readJsonText(node, "horaProgramada");
+        if (date == null || time == null) {
+            return null;
+        }
+
+        try {
+            LocalDate parsedDate = LocalDate.parse(date, AENA_DATE_FORMATTER);
+            LocalTime parsedTime = LocalTime.parse(time, AENA_TIME_FORMATTER);
+            return LocalDateTime.of(parsedDate, parsedTime).toString();
+        } catch (DateTimeParseException e) {
+            return null;
+        }
+    }
+
+    private String readJsonText(JsonNode node, String fieldName) {
+        JsonNode value = node.get(fieldName);
+        if (value == null || value.isNull()) {
+            return null;
+        }
+
+        String text = value.asText();
+        if (text == null || text.isBlank() || "null".equalsIgnoreCase(text)) {
+            return null;
+        }
+        return text.trim();
+    }
+
+    private boolean containsFlightLikeContent(Document document) {
         String text = normalizeSpaces(document.text()).toLowerCase(Locale.ROOT);
         if (text.isBlank()) {
             return false;

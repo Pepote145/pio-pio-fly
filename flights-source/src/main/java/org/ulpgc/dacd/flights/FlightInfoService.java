@@ -87,13 +87,20 @@ public class FlightInfoService {
                 continue;
             }
 
+            int savedFlightsForMatch = 0;
             for (FlightInfo flightInfo : flights) {
+                if (hasMissingUniqueKey(flightInfo)) {
+                    System.out.println("Se omite un vuelo de AENA sin clave completa para evitar duplicados.");
+                    continue;
+                }
+
                 flightInfoRepository.save(flightInfo);
                 insertedFlights++;
+                savedFlightsForMatch++;
             }
 
-            System.out.println("Se han guardado " + flights.size() + " vuelos de AENA para el partido "
-                    + describeMatch(awayMatch) + ".");
+            System.out.println("Se han guardado o actualizado " + savedFlightsForMatch
+                    + " vuelos de AENA para el partido " + describeMatch(awayMatch) + ".");
         }
 
         return insertedFlights;
@@ -149,5 +156,17 @@ public class FlightInfoService {
 
     private String describeMatch(Match match) {
         return match.getHomeTeam() + " vs " + match.getAwayTeam();
+    }
+
+    private boolean hasMissingUniqueKey(FlightInfo flightInfo) {
+        return isBlank(flightInfo.getFlightNumber())
+                || isBlank(flightInfo.getOriginAirport())
+                || isBlank(flightInfo.getDestinationAirport())
+                || isBlank(flightInfo.getScheduledDateTime())
+                || isBlank(flightInfo.getSource());
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }

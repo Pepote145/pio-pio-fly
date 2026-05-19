@@ -60,12 +60,24 @@ public class DatabaseInitializer {
             )
             """;
 
+    private static final String CREATE_FLIGHT_INFOS_UNIQUE_INDEX = """
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_flight_infos_unique_flight
+            ON flight_infos (
+                flight_number,
+                origin_airport,
+                destination_airport,
+                scheduled_datetime,
+                source
+            )
+            """;
+
     public void initializeDatabase() throws SQLException {
         try (Connection connection = DriverManager.getConnection(DATABASE_URL);
              Statement statement = connection.createStatement()) {
             statement.execute(CREATE_AWAY_MATCHES_TABLE);
             statement.execute(CREATE_FLIGHT_OFFERS_TABLE);
             statement.execute(CREATE_FLIGHT_INFOS_TABLE);
+            statement.execute(CREATE_FLIGHT_INFOS_UNIQUE_INDEX);
         }
     }
 }

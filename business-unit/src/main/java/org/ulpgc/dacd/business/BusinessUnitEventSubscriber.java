@@ -18,15 +18,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BusinessUnitEventSubscriber {
+    private static final long RECONNECT_DELAY_MILLIS = 5_000;
+
     private final String brokerUrl;
     private final String clientId;
     private final DatamartRepository datamartRepository;
     private final ObjectMapper objectMapper;
     private final List<MessageConsumer> consumers;
+    private final Object lifecycleLock;
 
     private Connection connection;
     private Session session;
-    private boolean active;
+    private Thread subscriberThread;
+    private volatile boolean active;
+    private volatile boolean connected;
 
     public BusinessUnitEventSubscriber(String brokerUrl, String clientId, DatamartRepository datamartRepository) {
         this.brokerUrl = brokerUrl;
@@ -34,38 +39,60 @@ public class BusinessUnitEventSubscriber {
         this.datamartRepository = datamartRepository;
         this.objectMapper = new ObjectMapper();
         this.consumers = new ArrayList<>();
+        this.lifecycleLock = new Object();
     }
 
     public boolean start() {
-        if (active) {
-            System.out.println("La sincronizacion en vivo ya esta activa.");
-            return false;
-        }
+        synchronized (lifecycleLock) {
+            if (active) {
+                System.out.println("La sincronizacion en vivo ya esta activa.");
+                return false;
+            }
 
-        try {
-            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(brokerUrl);
-            connection = connectionFactory.createConnection();
-            connection.setClientID(clientId);
-            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            createDurableSubscriber(EventTopics.AWAY_MATCH);
-            createDurableSubscriber(EventTopics.FLIGHT_INFO);
-            connection.start();
             active = true;
-            System.out.println("Sincronizacion en vivo iniciada desde ActiveMQ.");
+            subscriberThread = new Thread(this::runSubscriber, "business-unit-event-subscriber");
+            subscriberThread.setDaemon(true);
+            subscriberThread.start();
             return true;
-        } catch (JMSException e) {
-            System.out.println("No se pudo iniciar la sincronizacion en vivo con ActiveMQ: " + e.getMessage());
-            closeResources();
-            return false;
+        }
+    }
+
+    private void runSubscriber() {
+        while (active) {
+            try {
+                connect();
+                waitUntilDisconnected();
+            } catch (JMSException e) {
+                if (active) {
+                    System.out.println("No se pudo conectar la sincronizacion en vivo a ActiveMQ: " + e.getMessage());
+                }
+            } finally {
+                closeResources();
+            }
+
+            if (active) {
+                waitBeforeReconnect();
+            }
         }
     }
 
     public void stop() {
-        if (!active) {
-            System.out.println("La sincronizacion en vivo no esta activa.");
-            return;
+        Thread threadToInterrupt;
+        synchronized (lifecycleLock) {
+            if (!active) {
+                System.out.println("La sincronizacion en vivo no esta activa.");
+                return;
+            }
+
+            active = false;
+            connected = false;
+            threadToInterrupt = subscriberThread;
+            lifecycleLock.notifyAll();
         }
 
+        if (threadToInterrupt != null) {
+            threadToInterrupt.interrupt();
+        }
         closeResources();
         active = false;
         System.out.println("Sincronizacion en vivo detenida.");
@@ -75,15 +102,66 @@ public class BusinessUnitEventSubscriber {
         return active;
     }
 
-    private void createDurableSubscriber(String topicName) throws JMSException {
+    private void connect() throws JMSException {
+        closeResources();
+
+        ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(brokerUrl);
+        Connection newConnection = null;
+        Session newSession = null;
+        List<MessageConsumer> newConsumers = new ArrayList<>();
+        boolean assigned = false;
+
+        try {
+            newConnection = connectionFactory.createConnection();
+            newConnection.setClientID(clientId);
+            newConnection.setExceptionListener(this::handleConnectionException);
+            newSession = newConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            newConsumers.add(createDurableSubscriber(newSession, EventTopics.AWAY_MATCH));
+            newConsumers.add(createDurableSubscriber(newSession, EventTopics.FLIGHT_INFO));
+            newConnection.start();
+
+            synchronized (lifecycleLock) {
+                if (!active) {
+                    return;
+                }
+
+                connection = newConnection;
+                session = newSession;
+                consumers.addAll(newConsumers);
+                connected = true;
+                assigned = true;
+                lifecycleLock.notifyAll();
+            }
+
+            System.out.println("Business Unit conectada a ActiveMQ en " + brokerUrl + ".");
+        } finally {
+            if (!assigned) {
+                closeLocalResources(newConsumers, newSession, newConnection);
+            }
+        }
+    }
+
+    private MessageConsumer createDurableSubscriber(Session session, String topicName) throws JMSException {
         Topic topic = session.createTopic(topicName);
         MessageConsumer consumer = session.createDurableSubscriber(topic, subscriptionName(topicName));
         consumer.setMessageListener(message -> handleMessage(topicName, message));
-        consumers.add(consumer);
+        return consumer;
     }
 
     private String subscriptionName(String topicName) {
         return "business-unit-" + topicName;
+    }
+
+    private void handleConnectionException(JMSException e) {
+        if (!active) {
+            return;
+        }
+
+        System.out.println("Se perdio la conexion con ActiveMQ: " + e.getMessage());
+        synchronized (lifecycleLock) {
+            connected = false;
+            lifecycleLock.notifyAll();
+        }
     }
 
     private void handleMessage(String topicName, Message message) {
@@ -183,12 +261,25 @@ public class BusinessUnitEventSubscriber {
     }
 
     private void closeResources() {
-        closeConsumers();
-        closeSession();
-        closeConnection();
+        List<MessageConsumer> consumersToClose;
+        Session sessionToClose;
+        Connection connectionToClose;
+
+        synchronized (lifecycleLock) {
+            consumersToClose = new ArrayList<>(consumers);
+            consumers.clear();
+            sessionToClose = session;
+            session = null;
+            connectionToClose = connection;
+            connection = null;
+            connected = false;
+            lifecycleLock.notifyAll();
+        }
+
+        closeLocalResources(consumersToClose, sessionToClose, connectionToClose);
     }
 
-    private void closeConsumers() {
+    private void closeLocalResources(List<MessageConsumer> consumers, Session session, Connection connection) {
         for (MessageConsumer consumer : consumers) {
             try {
                 consumer.close();
@@ -196,34 +287,44 @@ public class BusinessUnitEventSubscriber {
                 System.out.println("No se pudo cerrar un consumer de ActiveMQ: " + e.getMessage());
             }
         }
-        consumers.clear();
+
+        if (session != null) {
+            try {
+                session.close();
+            } catch (JMSException e) {
+                System.out.println("No se pudo cerrar la sesion de ActiveMQ: " + e.getMessage());
+            }
+        }
+
+        if (connection != null) {
+            try {
+                connection.close();
+            } catch (JMSException e) {
+                System.out.println("No se pudo cerrar la conexion de ActiveMQ: " + e.getMessage());
+            }
+        }
     }
 
-    private void closeSession() {
-        if (session == null) {
-            return;
-        }
-
-        try {
-            session.close();
-        } catch (JMSException e) {
-            System.out.println("No se pudo cerrar la sesion de ActiveMQ: " + e.getMessage());
-        } finally {
-            session = null;
+    private void waitUntilDisconnected() {
+        synchronized (lifecycleLock) {
+            while (active && connected) {
+                try {
+                    lifecycleLock.wait();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    connected = false;
+                    return;
+                }
+            }
         }
     }
 
-    private void closeConnection() {
-        if (connection == null) {
-            return;
-        }
-
+    private void waitBeforeReconnect() {
+        System.out.println("Se reintentara la conexion con ActiveMQ en 5 segundos.");
         try {
-            connection.close();
-        } catch (JMSException e) {
-            System.out.println("No se pudo cerrar la conexion de ActiveMQ: " + e.getMessage());
-        } finally {
-            connection = null;
+            Thread.sleep(RECONNECT_DELAY_MILLIS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 }

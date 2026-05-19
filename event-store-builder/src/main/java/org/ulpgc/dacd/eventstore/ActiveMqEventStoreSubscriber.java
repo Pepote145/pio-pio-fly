@@ -21,6 +21,7 @@ public class ActiveMqEventStoreSubscriber implements AutoCloseable {
 
     private Connection connection;
     private Session session;
+    private boolean closed;
 
     public ActiveMqEventStoreSubscriber(String brokerUrl, String clientId, List<String> topics) {
         this(brokerUrl, clientId, topics, new EventStoreWriter("eventstore"));
@@ -57,9 +58,14 @@ public class ActiveMqEventStoreSubscriber implements AutoCloseable {
 
     @Override
     public void close() {
+        if (closed) {
+            return;
+        }
+
         closeConsumers();
         closeSession();
         closeConnection();
+        closed = true;
     }
 
     private void createDurableSubscription(String topicName) throws JMSException {
@@ -87,6 +93,8 @@ public class ActiveMqEventStoreSubscriber implements AutoCloseable {
             eventStoreWriter.append(topicName, eventJson);
         } catch (JMSException e) {
             System.out.println("No se pudo leer mensaje del topic " + topicName + ": " + e.getMessage());
+        } catch (RuntimeException e) {
+            System.out.println("No se pudo guardar evento del topic " + topicName + ": " + e.getMessage());
         }
     }
 
@@ -110,6 +118,8 @@ public class ActiveMqEventStoreSubscriber implements AutoCloseable {
             session.close();
         } catch (JMSException e) {
             System.out.println("No se pudo cerrar la sesion de ActiveMQ: " + e.getMessage());
+        } finally {
+            session = null;
         }
     }
 
@@ -122,6 +132,8 @@ public class ActiveMqEventStoreSubscriber implements AutoCloseable {
             connection.close();
         } catch (JMSException e) {
             System.out.println("No se pudo cerrar la conexion de ActiveMQ: " + e.getMessage());
+        } finally {
+            connection = null;
         }
     }
 }

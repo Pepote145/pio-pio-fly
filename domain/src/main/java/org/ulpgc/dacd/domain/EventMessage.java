@@ -24,7 +24,8 @@ public class EventMessage {
     }
 
     public static EventMessage fromInstant(Instant timestampUtc, String source, Map<String, Object> payload) {
-        return new EventMessage(timestampUtc.toString(), source, payload);
+        Instant eventTimestamp = timestampUtc != null ? timestampUtc : Instant.now();
+        return new EventMessage(eventTimestamp.toString(), source, payload);
     }
 
     public String getTs() {
@@ -36,7 +37,7 @@ public class EventMessage {
     }
 
     public Map<String, Object> getPayload() {
-        return new LinkedHashMap<>(payload);
+        return payload != null ? new LinkedHashMap<>(payload) : new LinkedHashMap<>();
     }
 
     @Override

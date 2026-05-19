@@ -13,6 +13,7 @@
         <module>domain</module>
         <module>matches-source</module>
         <module>flights-source</module>
+        <module>event-store-builder</module>
         <module>app</module>
     </modules>
 

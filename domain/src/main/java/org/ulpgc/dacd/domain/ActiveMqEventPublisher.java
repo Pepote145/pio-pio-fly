@@ -17,6 +17,7 @@ public class ActiveMqEventPublisher implements EventPublisher {
     private final ObjectMapper objectMapper;
     private final Connection connection;
     private final Session session;
+    private boolean closed;
 
     public ActiveMqEventPublisher() {
         this(DEFAULT_BROKER_URL);
@@ -28,18 +29,28 @@ public class ActiveMqEventPublisher implements EventPublisher {
 
     public ActiveMqEventPublisher(String brokerUrl, ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
+        Connection createdConnection = null;
+        Session createdSession = null;
         try {
             ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(brokerUrl);
-            this.connection = connectionFactory.createConnection();
-            this.connection.start();
-            this.session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            createdConnection = connectionFactory.createConnection();
+            createdSession = createdConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            createdConnection.start();
         } catch (JMSException e) {
+            closeQuietly(createdSession, "sesion");
+            closeQuietly(createdConnection, "conexion");
             throw new IllegalStateException("No se pudo conectar con ActiveMQ en " + brokerUrl, e);
         }
+        this.connection = createdConnection;
+        this.session = createdSession;
     }
 
     @Override
     public void publish(String topicName, EventMessage eventMessage) {
+        if (closed) {
+            throw new IllegalStateException("No se puede publicar porque el publisher ActiveMQ esta cerrado");
+        }
+
         MessageProducer producer = null;
         try {
             Destination destination = session.createTopic(topicName);
@@ -55,12 +66,13 @@ public class ActiveMqEventPublisher implements EventPublisher {
 
     @Override
     public void close() {
-        try {
-            session.close();
-            connection.close();
-        } catch (JMSException e) {
-            throw new IllegalStateException("No se pudo cerrar la conexion con ActiveMQ", e);
+        if (closed) {
+            return;
         }
+
+        closeQuietly(session, "sesion");
+        closeQuietly(connection, "conexion");
+        closed = true;
     }
 
     private void closeProducer(MessageProducer producer) {
@@ -71,7 +83,31 @@ public class ActiveMqEventPublisher implements EventPublisher {
         try {
             producer.close();
         } catch (JMSException e) {
-            throw new IllegalStateException("No se pudo cerrar el productor de ActiveMQ", e);
+            System.out.println("No se pudo cerrar el productor de ActiveMQ: " + e.getMessage());
+        }
+    }
+
+    private void closeQuietly(Session session, String resourceName) {
+        if (session == null) {
+            return;
+        }
+
+        try {
+            session.close();
+        } catch (JMSException e) {
+            System.out.println("No se pudo cerrar " + resourceName + " de ActiveMQ: " + e.getMessage());
+        }
+    }
+
+    private void closeQuietly(Connection connection, String resourceName) {
+        if (connection == null) {
+            return;
+        }
+
+        try {
+            connection.close();
+        } catch (JMSException e) {
+            System.out.println("No se pudo cerrar " + resourceName + " de ActiveMQ: " + e.getMessage());
         }
     }
 }

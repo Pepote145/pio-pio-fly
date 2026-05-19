@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -46,10 +47,12 @@ public class EventStoreWriter {
 
             String day = dayFromTimestamp(ts);
             Path directory = baseDirectory.resolve(topic).resolve(ss);
+            String eventLine = toJsonLine(eventJson);
             Files.createDirectories(directory);
             Files.writeString(
                     directory.resolve(day + ".events"),
-                    eventJson.strip() + System.lineSeparator(),
+                    eventLine + System.lineSeparator(),
+                    StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE,
                     StandardOpenOption.APPEND
             );
@@ -69,6 +72,10 @@ public class EventStoreWriter {
 
     private String dayFromTimestamp(String timestamp) {
         return DAY_FORMATTER.format(Instant.parse(timestamp));
+    }
+
+    private String toJsonLine(String eventJson) {
+        return eventJson.strip().replace("\r", "").replace("\n", "");
     }
 
     private boolean isBlank(String value) {

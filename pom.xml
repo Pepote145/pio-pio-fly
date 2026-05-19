@@ -17,6 +17,7 @@
     </modules>
 
     <properties>
+        <activemq.version>5.15.12</activemq.version>
         <jackson.version>2.18.2</jackson.version>
         <jsoup.version>1.18.3</jsoup.version>
         <maven.compiler.release>21</maven.compiler.release>

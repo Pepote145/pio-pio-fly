@@ -6,10 +6,18 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class DatamartRepository {
+    private static final long HIGH_RECOMMENDATION_HOURS = 72;
+
     private static final String COUNT_AWAY_MATCHES = "SELECT COUNT(*) FROM away_matches_datamart";
     private static final String COUNT_FLIGHTS = "SELECT COUNT(*) FROM flight_infos_datamart";
     private static final String COUNT_DESTINATIONS = """
@@ -215,23 +223,90 @@ public class DatamartRepository {
                         match.destinationAirport(),
                         0,
                         null,
-                        "Recomendacion: no hay aeropuerto destino registrado para este desplazamiento."
+                        "No hay aeropuerto destino registrado para este desplazamiento.",
+                        TravelRecommendation.RecommendationLevel.SIN_VUELOS
                 ));
                 continue;
             }
 
             List<FlightInfoView> flights = findFlightsByDestination(match.destinationAirport());
-            FlightInfoView firstFlight = flights.isEmpty() ? null : flights.getFirst();
-            recommendations.add(new TravelRecommendation(
-                    match,
-                    match.destinationAirport(),
-                    flights.size(),
-                    firstFlight,
-                    "Recomendacion: revisar vuelos hacia " + match.destinationAirport()
-                            + " para el desplazamiento a " + displayValue(match.city()) + "."
-            ));
+            recommendations.add(buildRecommendation(match, flights));
         }
         return recommendations;
+    }
+
+    private TravelRecommendation buildRecommendation(AwayMatchView match, List<FlightInfoView> flights) {
+        if (flights.isEmpty()) {
+            return new TravelRecommendation(
+                    match,
+                    match.destinationAirport(),
+                    0,
+                    null,
+                    "No hay vuelos cargados para este destino.",
+                    TravelRecommendation.RecommendationLevel.SIN_VUELOS
+            );
+        }
+
+        List<FlightInfoView> orderedFlights = flights.stream()
+                .sorted(Comparator.comparing(
+                        flight -> parseDateTime(flight.scheduledDateTime()),
+                        Comparator.nullsLast(Comparator.naturalOrder())
+                ))
+                .toList();
+        LocalDateTime matchDate = parseDateTime(match.matchDate());
+
+        if (matchDate == null) {
+            return new TravelRecommendation(
+                    match,
+                    match.destinationAirport(),
+                    orderedFlights.size(),
+                    orderedFlights.getFirst(),
+                    "Solo hay vuelos posteriores o sin relacion temporal clara con el partido.",
+                    TravelRecommendation.RecommendationLevel.BAJA
+            );
+        }
+
+        FlightInfoView bestPreviousFlight = null;
+        LocalDateTime bestPreviousDate = null;
+        for (FlightInfoView flight : orderedFlights) {
+            LocalDateTime flightDate = parseDateTime(flight.scheduledDateTime());
+            if (flightDate != null && flightDate.isBefore(matchDate)) {
+                bestPreviousFlight = flight;
+                bestPreviousDate = flightDate;
+            }
+        }
+
+        if (bestPreviousFlight != null) {
+            long hoursBeforeMatch = Duration.between(bestPreviousDate, matchDate).toHours();
+            if (hoursBeforeMatch <= HIGH_RECOMMENDATION_HOURS) {
+                return new TravelRecommendation(
+                        match,
+                        match.destinationAirport(),
+                        orderedFlights.size(),
+                        bestPreviousFlight,
+                        "Vuelo disponible dentro de las 72 horas previas al partido.",
+                        TravelRecommendation.RecommendationLevel.ALTA
+                );
+            }
+
+            return new TravelRecommendation(
+                    match,
+                    match.destinationAirport(),
+                    orderedFlights.size(),
+                    bestPreviousFlight,
+                    "Hay vuelos al destino, pero el mejor vuelo queda lejos de la fecha del partido.",
+                    TravelRecommendation.RecommendationLevel.MEDIA
+            );
+        }
+
+        return new TravelRecommendation(
+                match,
+                match.destinationAirport(),
+                orderedFlights.size(),
+                orderedFlights.getFirst(),
+                "Solo hay vuelos posteriores o sin relacion temporal clara con el partido.",
+                TravelRecommendation.RecommendationLevel.BAJA
+        );
     }
 
     private AwayMatchView toAwayMatchView(ResultSet resultSet) throws SQLException {
@@ -263,6 +338,28 @@ public class DatamartRepository {
 
     private String displayValue(String value) {
         return isBlank(value) ? "destino sin ciudad registrada" : value;
+    }
+
+    private LocalDateTime parseDateTime(String value) {
+        if (isBlank(value)) {
+            return null;
+        }
+
+        try {
+            return LocalDateTime.parse(value);
+        } catch (DateTimeParseException ignored) {
+        }
+
+        try {
+            return OffsetDateTime.parse(value).toLocalDateTime();
+        } catch (DateTimeParseException ignored) {
+        }
+
+        try {
+            return LocalDate.parse(value).atStartOfDay();
+        } catch (DateTimeParseException ignored) {
+            return null;
+        }
     }
 
     private boolean isBlank(String value) {

@@ -172,21 +172,26 @@ public class BusinessUnitCli {
                 AwayMatchView match = recommendation.match();
                 System.out.println();
                 System.out.println(display(match.homeTeam()) + " vs " + display(match.awayTeam())
-                        + " | " + display(match.matchDate())
-                        + " | Ciudad: " + display(match.city()));
-                System.out.println("- Destino: " + display(recommendation.destinationAirport()));
+                        + " | Fecha: " + display(match.matchDate()));
+                System.out.println("- Ciudad: " + display(match.city()));
+                System.out.println("- Estadio: " + display(match.stadium()));
+                System.out.println("- Aeropuerto destino: " + display(recommendation.destinationAirport()));
+                System.out.println("- Nivel de recomendacion: " + recommendation.level());
                 System.out.println("- Vuelos encontrados: " + recommendation.availableFlights());
-                if (recommendation.firstFlight() == null) {
+                if (recommendation.suggestedFlight() == null) {
                     System.out.println("- No hay vuelos cargados para ese destino.");
                 } else {
-                    FlightInfoView flight = recommendation.firstFlight();
-                    System.out.println("- Primer vuelo disponible: " + display(flight.scheduledDateTime())
-                            + " | " + display(flight.flightNumber())
-                            + " | " + display(flight.airline())
-                            + " | " + display(flight.originAirport()) + " -> "
+                    FlightInfoView flight = recommendation.suggestedFlight();
+                    System.out.println("- Vuelo sugerido:");
+                    System.out.println("  Fecha/hora: " + display(flight.scheduledDateTime()));
+                    System.out.println("  Numero de vuelo: " + display(flight.flightNumber()));
+                    System.out.println("  Aerolinea: " + display(flight.airline()));
+                    System.out.println("  Ruta: " + display(flight.originAirport()) + " -> "
                             + display(flight.destinationAirport()));
+                    System.out.println("  Estado: " + display(flight.status()));
+                    System.out.println("  Terminal: " + display(flight.terminal()));
                 }
-                System.out.println("- " + recommendation.recommendationText());
+                System.out.println("- Motivo: " + recommendation.reason());
             }
         } catch (SQLException e) {
             System.out.println("No se pudieron generar recomendaciones: " + e.getMessage());

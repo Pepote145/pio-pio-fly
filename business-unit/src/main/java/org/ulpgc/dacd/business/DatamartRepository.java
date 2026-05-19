@@ -6,6 +6,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DatamartRepository {
     private static final String COUNT_AWAY_MATCHES = "SELECT COUNT(*) FROM away_matches_datamart";
@@ -75,6 +77,41 @@ public class DatamartRepository {
                 terminal = excluded.terminal,
                 captured_at = excluded.captured_at
             """;
+    private static final String SELECT_UPCOMING_AWAY_MATCHES = """
+            SELECT
+                external_id,
+                competition,
+                home_team,
+                away_team,
+                match_date,
+                city,
+                stadium,
+                destination_airport,
+                source
+            FROM away_matches_datamart
+            WHERE match_date IS NOT NULL AND TRIM(match_date) <> ''
+            ORDER BY match_date ASC
+            """;
+    private static final String SELECT_FLIGHTS_BY_DESTINATION = """
+            SELECT
+                flight_number,
+                airline,
+                origin_airport,
+                destination_airport,
+                scheduled_datetime,
+                status,
+                terminal,
+                source
+            FROM flight_infos_datamart
+            WHERE UPPER(destination_airport) = UPPER(?)
+            ORDER BY scheduled_datetime ASC
+            """;
+    private static final String SELECT_AVAILABLE_DESTINATIONS = """
+            SELECT DISTINCT destination_airport
+            FROM flight_infos_datamart
+            WHERE destination_airport IS NOT NULL AND TRIM(destination_airport) <> ''
+            ORDER BY destination_airport ASC
+            """;
 
     public DatamartSummary getSummary() throws SQLException {
         try (Connection connection = DriverManager.getConnection(BusinessUnitConfig.DATAMART_DATABASE_URL);
@@ -129,5 +166,106 @@ public class DatamartRepository {
             statement.setString(9, capturedAt);
             statement.executeUpdate();
         }
+    }
+
+    public List<AwayMatchView> findUpcomingAwayMatches() throws SQLException {
+        List<AwayMatchView> matches = new ArrayList<>();
+        try (Connection connection = DriverManager.getConnection(BusinessUnitConfig.DATAMART_DATABASE_URL);
+             PreparedStatement statement = connection.prepareStatement(SELECT_UPCOMING_AWAY_MATCHES);
+             ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                matches.add(toAwayMatchView(resultSet));
+            }
+        }
+        return matches;
+    }
+
+    public List<FlightInfoView> findFlightsByDestination(String destinationAirport) throws SQLException {
+        List<FlightInfoView> flights = new ArrayList<>();
+        try (Connection connection = DriverManager.getConnection(BusinessUnitConfig.DATAMART_DATABASE_URL);
+             PreparedStatement statement = connection.prepareStatement(SELECT_FLIGHTS_BY_DESTINATION)) {
+            statement.setString(1, destinationAirport);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    flights.add(toFlightInfoView(resultSet));
+                }
+            }
+        }
+        return flights;
+    }
+
+    public List<String> findAvailableDestinations() throws SQLException {
+        List<String> destinations = new ArrayList<>();
+        try (Connection connection = DriverManager.getConnection(BusinessUnitConfig.DATAMART_DATABASE_URL);
+             PreparedStatement statement = connection.prepareStatement(SELECT_AVAILABLE_DESTINATIONS);
+             ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                destinations.add(resultSet.getString("destination_airport"));
+            }
+        }
+        return destinations;
+    }
+
+    public List<TravelRecommendation> buildTravelRecommendations() throws SQLException {
+        List<TravelRecommendation> recommendations = new ArrayList<>();
+        for (AwayMatchView match : findUpcomingAwayMatches()) {
+            if (isBlank(match.destinationAirport())) {
+                recommendations.add(new TravelRecommendation(
+                        match,
+                        match.destinationAirport(),
+                        0,
+                        null,
+                        "Recomendacion: no hay aeropuerto destino registrado para este desplazamiento."
+                ));
+                continue;
+            }
+
+            List<FlightInfoView> flights = findFlightsByDestination(match.destinationAirport());
+            FlightInfoView firstFlight = flights.isEmpty() ? null : flights.getFirst();
+            recommendations.add(new TravelRecommendation(
+                    match,
+                    match.destinationAirport(),
+                    flights.size(),
+                    firstFlight,
+                    "Recomendacion: revisar vuelos hacia " + match.destinationAirport()
+                            + " para el desplazamiento a " + displayValue(match.city()) + "."
+            ));
+        }
+        return recommendations;
+    }
+
+    private AwayMatchView toAwayMatchView(ResultSet resultSet) throws SQLException {
+        return new AwayMatchView(
+                resultSet.getString("external_id"),
+                resultSet.getString("competition"),
+                resultSet.getString("home_team"),
+                resultSet.getString("away_team"),
+                resultSet.getString("match_date"),
+                resultSet.getString("city"),
+                resultSet.getString("stadium"),
+                resultSet.getString("destination_airport"),
+                resultSet.getString("source")
+        );
+    }
+
+    private FlightInfoView toFlightInfoView(ResultSet resultSet) throws SQLException {
+        return new FlightInfoView(
+                resultSet.getString("flight_number"),
+                resultSet.getString("airline"),
+                resultSet.getString("origin_airport"),
+                resultSet.getString("destination_airport"),
+                resultSet.getString("scheduled_datetime"),
+                resultSet.getString("status"),
+                resultSet.getString("terminal"),
+                resultSet.getString("source")
+        );
+    }
+
+    private String displayValue(String value) {
+        return isBlank(value) ? "destino sin ciudad registrada" : value;
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }

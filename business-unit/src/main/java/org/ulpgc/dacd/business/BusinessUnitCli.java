@@ -2,11 +2,10 @@ package org.ulpgc.dacd.business;
 
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Scanner;
 
 public class BusinessUnitCli {
-    private static final String PENDING_MESSAGE = "Funcionalidad pendiente de implementar en el siguiente bloque.";
-
     private final DatamartRepository datamartRepository;
     private final EventStoreDatamartLoader eventStoreDatamartLoader;
     private final BusinessUnitEventSubscriber eventSubscriber;
@@ -21,6 +20,7 @@ public class BusinessUnitCli {
 
     public void start() {
         try (Scanner scanner = new Scanner(System.in)) {
+            printHeader();
             boolean running = true;
             while (running) {
                 printMenu();
@@ -30,9 +30,17 @@ public class BusinessUnitCli {
         }
     }
 
+    private void printHeader() {
+        System.out.println("=========================================");
+        System.out.println("       PioPioFly Business Unit");
+        System.out.println("    Asistente de desplazamientos UDLP");
+        System.out.println("=========================================");
+    }
+
     private void printMenu() {
         System.out.println();
-        System.out.println("=== PioPioFly Business Unit ===");
+        System.out.println("Menu principal");
+        System.out.println("-----------------------------------------");
         System.out.println("1. Ver proximos partidos fuera de casa");
         System.out.println("2. Ver vuelos disponibles por destino");
         System.out.println("3. Ver recomendacion de desplazamiento");
@@ -45,46 +53,70 @@ public class BusinessUnitCli {
     }
 
     private boolean handleOption(String option, Scanner scanner) {
-        switch (option) {
-            case "1" -> {
+        Integer menuOption = parseMenuOption(option);
+        if (menuOption == null) {
+            System.out.println("Debes introducir un numero de opcion valido.");
+            pause(scanner);
+            return true;
+        }
+
+        boolean running = switch (menuOption) {
+            case 1 -> {
                 showUpcomingAwayMatches();
-                return true;
+                yield true;
             }
-            case "2" -> {
+            case 2 -> {
                 showFlightsByDestination(scanner);
-                return true;
+                yield true;
             }
-            case "3" -> {
+            case 3 -> {
                 showTravelRecommendations();
-                return true;
+                yield true;
             }
-            case "4" -> {
+            case 4 -> {
                 showDatamartSummary();
-                return true;
+                yield true;
             }
-            case "5" -> {
+            case 5 -> {
                 reloadEventStoreHistory();
-                return true;
+                yield true;
             }
-            case "6" -> {
-                eventSubscriber.start();
-                return true;
+            case 6 -> {
+                startLiveSynchronization();
+                yield true;
             }
-            case "7" -> {
+            case 7 -> {
                 eventSubscriber.stop();
-                return true;
+                yield true;
             }
-            case "0" -> {
+            case 0 -> {
                 if (eventSubscriber.isActive()) {
                     eventSubscriber.stop();
                 }
-                System.out.println("Cerrando PioPioFly Business Unit.");
-                return false;
+                System.out.println("Cerrando PioPioFly Business Unit...");
+                yield false;
             }
             default -> {
-                System.out.println("Opcion no valida.");
-                return true;
+                System.out.println("Opcion no valida. Elige una opcion entre 0 y 7.");
+                yield true;
             }
+        };
+
+        if (running) {
+            pause(scanner);
+        }
+        return running;
+    }
+
+    private Integer parseMenuOption(String option) {
+        if (option == null || option.isBlank()) {
+            return null;
+        }
+
+        try {
+            return Integer.parseInt(option);
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 
@@ -97,6 +129,10 @@ public class BusinessUnitCli {
             System.out.println("- Vuelos disponibles: " + summary.flights());
             System.out.println("- Destinos registrados: " + summary.destinations());
             System.out.println("- Fuentes registradas: " + summary.sources());
+            if (summary.awayMatches() == 0 && summary.flights() == 0) {
+                System.out.println();
+                System.out.println("El datamart esta vacio. Usa la opcion 5 para recargar historicos desde eventstore.");
+            }
         } catch (SQLException e) {
             System.out.println("No se pudo leer el resumen del datamart: " + e.getMessage());
         }
@@ -106,7 +142,7 @@ public class BusinessUnitCli {
         try {
             List<AwayMatchView> matches = datamartRepository.findUpcomingAwayMatches();
             if (matches.isEmpty()) {
-                System.out.println("No hay partidos cargados en el datamart. Usa primero la opcion 5.");
+                System.out.println("No hay partidos cargados en el datamart. Usa primero la opcion 5 para recargar historicos desde eventstore.");
                 return;
             }
 
@@ -128,18 +164,22 @@ public class BusinessUnitCli {
         try {
             List<String> destinations = datamartRepository.findAvailableDestinations();
             if (destinations.isEmpty()) {
-                System.out.println("No hay vuelos cargados en el datamart. Usa primero la opcion 5.");
+                System.out.println("No hay vuelos cargados en el datamart. Usa primero la opcion 5 para recargar historicos desde eventstore.");
                 return;
             }
 
             System.out.println();
             System.out.println("Destinos disponibles: " + String.join(", ", destinations));
             System.out.print("Introduce codigo de aeropuerto destino: ");
-            String destinationAirport = scanner.nextLine().trim().toUpperCase();
+            String destinationAirport = scanner.nextLine().trim().toUpperCase(Locale.ROOT);
+            if (destinationAirport.isBlank()) {
+                System.out.println("Debes introducir un codigo de aeropuerto destino.");
+                return;
+            }
 
             List<FlightInfoView> flights = datamartRepository.findFlightsByDestination(destinationAirport);
             if (flights.isEmpty()) {
-                System.out.println("No hay vuelos cargados para ese destino.");
+                System.out.println("No hay vuelos cargados para ese destino. Revisa el codigo o recarga historicos con la opcion 5.");
                 return;
             }
 
@@ -162,7 +202,7 @@ public class BusinessUnitCli {
         try {
             List<TravelRecommendation> recommendations = datamartRepository.buildTravelRecommendations();
             if (recommendations.isEmpty()) {
-                System.out.println("No hay partidos cargados en el datamart. Usa primero la opcion 5.");
+                System.out.println("No hay recomendaciones disponibles porque el datamart no tiene partidos cargados. Usa primero la opcion 5.");
                 return;
             }
 
@@ -207,6 +247,20 @@ public class BusinessUnitCli {
         System.out.println("- Vuelos cargados: " + result.loadedFlights());
         System.out.println("- Eventos omitidos: " + result.skippedEvents());
         System.out.println("- Eventos con error: " + result.failedEvents());
+        System.out.println("Ahora puedes consultar el resumen con la opcion 4.");
+    }
+
+    private void startLiveSynchronization() {
+        boolean started = eventSubscriber.start();
+        if (started) {
+            System.out.println("Sincronizacion en vivo iniciada. Ejecuta los feeders para recibir nuevos eventos.");
+        }
+    }
+
+    private void pause(Scanner scanner) {
+        System.out.println();
+        System.out.print("Pulsa ENTER para continuar...");
+        scanner.nextLine();
     }
 
     private String display(String value) {

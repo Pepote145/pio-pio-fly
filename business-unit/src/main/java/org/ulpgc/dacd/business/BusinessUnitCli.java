@@ -7,9 +7,12 @@ public class BusinessUnitCli {
     private static final String PENDING_MESSAGE = "Funcionalidad pendiente de implementar en el siguiente bloque.";
 
     private final DatamartRepository datamartRepository;
+    private final EventStoreDatamartLoader eventStoreDatamartLoader;
 
-    public BusinessUnitCli(DatamartRepository datamartRepository) {
+    public BusinessUnitCli(DatamartRepository datamartRepository,
+                           EventStoreDatamartLoader eventStoreDatamartLoader) {
         this.datamartRepository = datamartRepository;
+        this.eventStoreDatamartLoader = eventStoreDatamartLoader;
     }
 
     public void start() {
@@ -37,12 +40,16 @@ public class BusinessUnitCli {
 
     private boolean handleOption(String option) {
         switch (option) {
-            case "1", "2", "3", "5" -> {
+            case "1", "2", "3" -> {
                 System.out.println(PENDING_MESSAGE);
                 return true;
             }
             case "4" -> {
                 showDatamartSummary();
+                return true;
+            }
+            case "5" -> {
+                reloadEventStoreHistory();
                 return true;
             }
             case "0" -> {
@@ -68,5 +75,16 @@ public class BusinessUnitCli {
         } catch (SQLException e) {
             System.out.println("No se pudo leer el resumen del datamart: " + e.getMessage());
         }
+    }
+
+    private void reloadEventStoreHistory() {
+        DatamartLoadResult result = eventStoreDatamartLoader.load();
+        System.out.println();
+        System.out.println("Recarga de historicos finalizada:");
+        System.out.println("- Eventos procesados: " + result.processedEvents());
+        System.out.println("- Partidos cargados: " + result.loadedAwayMatches());
+        System.out.println("- Vuelos cargados: " + result.loadedFlights());
+        System.out.println("- Eventos omitidos: " + result.skippedEvents());
+        System.out.println("- Eventos con error: " + result.failedEvents());
     }
 }

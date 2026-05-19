@@ -19,7 +19,8 @@ public class BusinessUnitApp {
         }
 
         DatamartRepository datamartRepository = new DatamartRepository();
-        BusinessUnitCli cli = new BusinessUnitCli(datamartRepository);
+        EventStoreDatamartLoader eventStoreDatamartLoader = new EventStoreDatamartLoader(datamartRepository);
+        BusinessUnitCli cli = new BusinessUnitCli(datamartRepository, eventStoreDatamartLoader);
         cli.start();
     }
 }

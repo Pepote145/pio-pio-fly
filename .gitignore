@@ -37,8 +37,20 @@ build/
 .vscode/
 
 ### Mac OS ###
-.DS_Store*.db
+.DS_Store
 .m2/
+
+### Bases de datos SQLite locales ###
+*.db
 pio_pio_fly.db
+business_unit.db
+
+### Event store generado en local ###
 /eventstore/
+
+### Debug scraper AENA ###
 aena_*.html
+
+### Excepciones: muestras para evaluación ###
+!samples/
+!samples/**.playwright-mcp/

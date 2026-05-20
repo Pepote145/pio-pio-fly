@@ -14,16 +14,22 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class FlightInfoService {
     private static final String ORIGIN_AIRPORT = "LPA";
     private static final String MATCH_SOURCE = "laliga.com";
     private static final String SOURCE_ID = "aena-flights-source";
+    private static final List<Integer> OUTBOUND_DAY_OFFSETS = List.of(-2, -1);
+    private static final int RETURN_DAY_OFFSET = 1;
     private static final String SELECT_AWAY_MATCHES = """
             SELECT
                 external_id,
@@ -89,33 +95,56 @@ public class FlightInfoService {
                 continue;
             }
 
-            String date = extractMatchDate(awayMatch);
-            System.out.println("Consultando vuelos AENA: " + ORIGIN_AIRPORT
-                    + " -> " + awayMatch.getDestinationAirport()
-                    + " para " + describeMatch(awayMatch)
-                    + " en fecha " + date + ".");
-            List<FlightInfo> flights = flightInfoScraper.fetchFlights(
-                    ORIGIN_AIRPORT,
-                    awayMatch.getDestinationAirport(),
-                    date
-            );
-
-            if (flights.isEmpty()) {
-                System.out.println("AENA no ha devuelto vuelos para el partido " + describeMatch(awayMatch) + ".");
+            LocalDate matchDate = extractMatchDate(awayMatch);
+            if (matchDate == null) {
+                System.out.println("Se omite la captura de vuelos para " + describeMatch(awayMatch)
+                        + " porque match_date no es valido.");
                 continue;
             }
 
             int savedFlightsForMatch = 0;
-            for (FlightInfo flightInfo : flights) {
-                if (hasMissingUniqueKey(flightInfo)) {
-                    System.out.println("Se omite un vuelo de AENA sin clave completa para evitar duplicados.");
+            boolean anyFlightsFound = false;
+            for (FlightQuery query : buildFlightQueries(awayMatch.getDestinationAirport(), matchDate)) {
+                System.out.println("Capturando vuelos de " + query.direction()
+                        + " " + query.originAirport()
+                        + " -> " + query.destinationAirport()
+                        + " para " + query.date() + ".");
+
+                List<FlightInfo> flights = flightInfoScraper.fetchFlights(
+                        query.originAirport(),
+                        query.destinationAirport(),
+                        query.date().toString()
+                );
+                System.out.println("Vuelos devueltos por AENA: " + flights.size());
+
+                if (flights.isEmpty()) {
+                    System.out.println("AENA no ha devuelto vuelos de " + query.direction()
+                            + " para " + query.originAirport()
+                            + " -> " + query.destinationAirport()
+                            + " en fecha " + query.date() + ".");
                     continue;
                 }
 
-                flightInfoRepository.save(flightInfo);
-                publishFlightInfoEvent(flightInfo);
-                insertedFlights++;
-                savedFlightsForMatch++;
+                anyFlightsFound = true;
+                int savedFlightsForQuery = 0;
+                for (FlightInfo flightInfo : flights) {
+                    if (hasMissingUniqueKey(flightInfo)) {
+                        System.out.println("Se omite un vuelo de AENA sin clave completa para evitar duplicados.");
+                        continue;
+                    }
+
+                    flightInfoRepository.save(flightInfo);
+                    publishFlightInfoEvent(flightInfo);
+                    insertedFlights++;
+                    savedFlightsForMatch++;
+                    savedFlightsForQuery++;
+                }
+                System.out.println("Vuelos guardados/publicados: " + savedFlightsForQuery);
+            }
+
+            if (!anyFlightsFound) {
+                System.out.println("No se han encontrado vuelos AENA cerca de la fecha del partido "
+                        + describeMatch(awayMatch) + ".");
             }
 
             System.out.println("Se han guardado o actualizado " + savedFlightsForMatch
@@ -158,19 +187,44 @@ public class FlightInfoService {
             return null;
         }
 
+        String text = value.trim();
         try {
-            return LocalDateTime.parse(value);
-        } catch (DateTimeParseException e) {
-            return null;
+            return LocalDateTime.parse(text);
+        } catch (DateTimeParseException ignored) {
         }
+
+        try {
+            return OffsetDateTime.parse(text).toLocalDateTime();
+        } catch (DateTimeParseException ignored) {
+        }
+
+        try {
+            return LocalDate.parse(text).atStartOfDay();
+        } catch (DateTimeParseException ignored) {
+        }
+
+        for (DateTimeFormatter formatter : dateTimeFormatters()) {
+            try {
+                return LocalDateTime.parse(text, formatter);
+            } catch (DateTimeParseException ignored) {
+            }
+        }
+
+        for (DateTimeFormatter formatter : dateFormatters()) {
+            try {
+                return LocalDate.parse(text, formatter).atStartOfDay();
+            } catch (DateTimeParseException ignored) {
+            }
+        }
+
+        return null;
     }
 
-    private String extractMatchDate(Match match) {
+    private LocalDate extractMatchDate(Match match) {
         if (match.getMatchDate() == null) {
             return null;
         }
-        LocalDate date = match.getMatchDate().toLocalDate();
-        return date.toString();
+        return match.getMatchDate().toLocalDate();
     }
 
     private String describeMatch(Match match) {
@@ -187,6 +241,25 @@ public class FlightInfoService {
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private List<FlightQuery> buildFlightQueries(String destinationAirport, LocalDate matchDate) {
+        Set<FlightQuery> queries = new LinkedHashSet<>();
+        for (int dayOffset : OUTBOUND_DAY_OFFSETS) {
+            queries.add(new FlightQuery(
+                    ORIGIN_AIRPORT,
+                    destinationAirport,
+                    matchDate.plusDays(dayOffset),
+                    "ida"
+            ));
+        }
+        queries.add(new FlightQuery(
+                destinationAirport,
+                ORIGIN_AIRPORT,
+                matchDate.plusDays(RETURN_DAY_OFFSET),
+                "vuelta"
+        ));
+        return new ArrayList<>(queries);
     }
 
     private void publishFlightInfoEvent(FlightInfo flightInfo) {
@@ -217,5 +290,27 @@ public class FlightInfoService {
 
     private String formatDateTime(LocalDateTime value) {
         return value != null ? value.toString() : null;
+    }
+
+    private List<DateTimeFormatter> dateFormatters() {
+        return List.of(
+                DateTimeFormatter.ISO_LOCAL_DATE,
+                DateTimeFormatter.ofPattern("dd-MM-yyyy"),
+                DateTimeFormatter.ofPattern("dd/MM/yyyy")
+        );
+    }
+
+    private List<DateTimeFormatter> dateTimeFormatters() {
+        return List.of(
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"),
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
+                DateTimeFormatter.ofPattern("dd-MM-yyyy'T'HH:mm"),
+                DateTimeFormatter.ofPattern("dd-MM-yyyy'T'HH:mm:ss"),
+                DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"),
+                DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")
+        );
+    }
+
+    private record FlightQuery(String originAirport, String destinationAirport, LocalDate date, String direction) {
     }
 }

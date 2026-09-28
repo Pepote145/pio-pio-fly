@@ -1,9 +1,8 @@
 name: CI
 
+# Repo sin forks: basta con cada push a cualquier rama (el resultado se ve también en la PR)
 on:
   push:
-    branches: [main]
-  pull_request:
 
 jobs:
   backend:

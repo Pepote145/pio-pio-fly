@@ -9,6 +9,7 @@ import java.sql.Statement;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -480,7 +481,8 @@ public class DatamartRepository {
     private List<AwayMatchView> deduplicateMatches(List<AwayMatchView> matches) {
         Map<String, AwayMatchView> uniqueMatches = new LinkedHashMap<>();
         for (AwayMatchView match : matches) {
-            uniqueMatches.putIfAbsent(matchDeduplicationKey(match), match);
+            String key = matchDeduplicationKey(match);
+            uniqueMatches.merge(key, match, this::selectBetterMatch);
         }
         return new ArrayList<>(uniqueMatches.values());
     }
@@ -488,9 +490,57 @@ public class DatamartRepository {
     private String matchDeduplicationKey(AwayMatchView match) {
         return normalize(match.homeTeam()) + "|"
                 + normalize(match.awayTeam()) + "|"
-                + normalizeDateTime(match.matchDate()) + "|"
+                + normalizeMatchDate(match.matchDate()) + "|"
                 + normalize(match.stadium()) + "|"
                 + normalize(match.destinationAirport());
+    }
+
+    private String normalizeMatchDate(String value) {
+        LocalDate date = parseDate(value);
+        return date == null ? normalizeDateTime(value) : date.toString();
+    }
+
+    private AwayMatchView selectBetterMatch(AwayMatchView current, AwayMatchView candidate) {
+        int currentScore = matchQualityScore(current);
+        int candidateScore = matchQualityScore(candidate);
+        if (candidateScore > currentScore) {
+            return candidate;
+        }
+
+        if (candidateScore == currentScore) {
+            LocalDateTime currentDateTime = parseDateTime(current.matchDate());
+            LocalDateTime candidateDateTime = parseDateTime(candidate.matchDate());
+            if (currentDateTime == null) {
+                return candidate;
+            }
+            if (candidateDateTime == null) {
+                return current;
+            }
+            return candidateDateTime.isAfter(currentDateTime) ? candidate : current;
+        }
+
+        return current;
+    }
+
+    private int matchQualityScore(AwayMatchView match) {
+        int score = 0;
+        LocalDateTime dateTime = parseDateTime(match.matchDate());
+        if (dateTime != null) {
+            score += 2;
+            if (!dateTime.toLocalTime().equals(LocalTime.MIDNIGHT)) {
+                score += 3;
+            }
+        }
+        if (!isBlank(match.stadium())) {
+            score += 1;
+        }
+        if (!isBlank(match.city())) {
+            score += 1;
+        }
+        if (!isBlank(match.competition())) {
+            score += 1;
+        }
+        return score;
     }
 
     private List<FlightInfoView> deduplicateFlights(List<FlightInfoView> flights) {

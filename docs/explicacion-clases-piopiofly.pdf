@@ -1,0 +1,1324 @@
+%PDF-1.4
+%âãÏÓ
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+2 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+3 0 obj
+<< /Length 3327 >>
+stream
+BT
+/F2 22 Tf 1 0 0 1 52.00 779.89 Tm (Explicación de clases - PioPioFly) Tj
+/F2 17 Tf 1 0 0 1 52.00 733.41 Tm (1. Introducción) Tj
+/F1 11 Tf 1 0 0 1 52.00 699.63 Tm (PioPioFly es un asistente de desplazamientos para aficionados de la UD Las) Tj
+/F1 11 Tf 1 0 0 1 52.00 684.89 Tm (Palmas. Su objetivo es combinar tres tipos de información:) Tj
+/F1 11 Tf 1 0 0 1 64.00 663.15 Tm (- partidos fuera de casa obtenidos desde LaLiga,) Tj
+/F1 11 Tf 1 0 0 1 64.00 648.41 Tm (- vuelos obtenidos desde AENA,) Tj
+/F1 11 Tf 1 0 0 1 64.00 633.67 Tm (- enlace oficial de compra de entradas para desplazamientos.) Tj
+/F1 11 Tf 1 0 0 1 52.00 611.93 Tm (El proyecto sigue una arquitectura **Lambda simplificada**:) Tj
+/F1 11 Tf 1 0 0 1 64.00 590.19 Tm (- los **feeders** capturan datos y publican eventos en ActiveMQ,) Tj
+/F1 11 Tf 1 0 0 1 64.00 575.45 Tm (- el **Event Store Builder** consume esos eventos y los guarda como histórico) Tj
+/F1 11 Tf 1 0 0 1 64.00 560.71 Tm (  en ficheros `.events`,) Tj
+/F1 11 Tf 1 0 0 1 64.00 545.97 Tm (- la **Business Unit** reconstruye o actualiza un **datamart SQLite** a partir) Tj
+/F1 11 Tf 1 0 0 1 64.00 531.23 Tm (  del histórico y del consumo en vivo,) Tj
+/F1 11 Tf 1 0 0 1 64.00 516.49 Tm (- la **API REST** y el **dashboard web** consultan ese datamart para ofrecer) Tj
+/F1 11 Tf 1 0 0 1 64.00 501.75 Tm (  una vista útil al usuario final.) Tj
+/F1 11 Tf 1 0 0 1 52.00 480.01 Tm (La idea importante para la defensa es esta: el sistema no solo captura datos,) Tj
+/F1 11 Tf 1 0 0 1 52.00 465.27 Tm (sino que separa claramente **fuentes**, **eventos**, **almacenamiento) Tj
+/F1 11 Tf 1 0 0 1 52.00 450.53 Tm (histórico**, **modelo de consulta** e **interfaz**.) Tj
+/F2 17 Tf 1 0 0 1 52.00 424.79 Tm (2. Vista general de módulos) Tj
+/F2 13 Tf 1 0 0 1 52.00 389.01 Tm (Módulo `domain`) Tj
+/F1 11 Tf 1 0 0 1 64.00 362.59 Tm (- Responsabilidad principal: definir modelos comunes, contratos y utilidades) Tj
+/F1 11 Tf 1 0 0 1 64.00 347.85 Tm (  compartidas.) Tj
+/F1 11 Tf 1 0 0 1 64.00 333.11 Tm (- Clases más importantes: `Match`, `FlightInfo`, `EventMessage`, `EventTopics`,) Tj
+/F1 11 Tf 1 0 0 1 64.00 318.37 Tm (  `EventPublisher`, `ActiveMqEventPublisher`, `AirportMapping`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 303.63 Tm (- Relación con otros módulos: todos los demás módulos dependen de `domain`.) Tj
+/F2 13 Tf 1 0 0 1 52.00 279.89 Tm (Módulo `app`) Tj
+/F1 11 Tf 1 0 0 1 64.00 253.47 Tm (- Responsabilidad principal: orquestar la ejecución principal del sistema.) Tj
+/F1 11 Tf 1 0 0 1 64.00 238.73 Tm (- Clases más importantes: `Main`, `DatabaseInitializer`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 223.99 Tm (- Relación con otros módulos: usa `matches-source`, `flights-source` y) Tj
+/F1 11 Tf 1 0 0 1 64.00 209.25 Tm (  `domain`.) Tj
+/F2 13 Tf 1 0 0 1 52.00 185.51 Tm (Módulo `matches-source`) Tj
+/F1 11 Tf 1 0 0 1 64.00 159.09 Tm (- Responsabilidad principal: capturar partidos fuera de casa de la UD Las) Tj
+/F1 11 Tf 1 0 0 1 64.00 144.35 Tm (  Palmas desde LaLiga.) Tj
+/F1 11 Tf 1 0 0 1 64.00 129.61 Tm (- Clases más importantes: `LaligaMatchScraper`, `AwayMatchService`,) Tj
+/F1 11 Tf 1 0 0 1 64.00 114.87 Tm (  `AwayMatchRepository`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 100.13 Tm (- Relación con otros módulos: usa `domain` y persiste en `pio_pio_fly.db`.) Tj
+/F2 13 Tf 1 0 0 1 52.00 76.39 Tm (Módulo `flights-source`) Tj
+ET
+endstream
+endobj
+4 0 obj
+<< /Length 3382 >>
+stream
+BT
+/F1 11 Tf 1 0 0 1 64.00 785.89 Tm (- Responsabilidad principal: capturar vuelos desde AENA para los) Tj
+/F1 11 Tf 1 0 0 1 64.00 771.15 Tm (  desplazamientos.) Tj
+/F1 11 Tf 1 0 0 1 64.00 756.41 Tm (- Clases más importantes: `AenaFlightScraper`, `FlightInfoService`,) Tj
+/F1 11 Tf 1 0 0 1 64.00 741.67 Tm (  `FlightInfoRepository`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 726.93 Tm (- Relación con otros módulos: usa `domain`, lee partidos ya guardados y publica) Tj
+/F1 11 Tf 1 0 0 1 64.00 712.19 Tm (  eventos `FlightInfo`.) Tj
+/F2 13 Tf 1 0 0 1 52.00 688.45 Tm (Módulo `event-store-builder`) Tj
+/F1 11 Tf 1 0 0 1 64.00 662.03 Tm (- Responsabilidad principal: consumir eventos de ActiveMQ y almacenarlos en un) Tj
+/F1 11 Tf 1 0 0 1 64.00 647.29 Tm (  event store en disco.) Tj
+/F1 11 Tf 1 0 0 1 64.00 632.55 Tm (- Clases más importantes: `EventStoreBuilderApp`,) Tj
+/F1 11 Tf 1 0 0 1 64.00 617.81 Tm (  `ActiveMqEventStoreSubscriber`, `EventStoreWriter`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 603.07 Tm (- Relación con otros módulos: depende de `domain` para topics y publisher) Tj
+/F1 11 Tf 1 0 0 1 64.00 588.33 Tm (  común, y entrega históricos a `business-unit`.) Tj
+/F2 13 Tf 1 0 0 1 52.00 564.59 Tm (Módulo `business-unit`) Tj
+/F1 11 Tf 1 0 0 1 64.00 538.17 Tm (- Responsabilidad principal: construir la vista de negocio del sistema.) Tj
+/F1 11 Tf 1 0 0 1 64.00 523.43 Tm (- Clases más importantes: `DatamartRepository`, `EventStoreDatamartLoader`,) Tj
+/F1 11 Tf 1 0 0 1 64.00 508.69 Tm (  `BusinessUnitEventSubscriber`, `BusinessUnitWebServer`, `BusinessUnitApp`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 493.95 Tm (- Relación con otros módulos: consume el histórico del event store, consume) Tj
+/F1 11 Tf 1 0 0 1 64.00 479.21 Tm (  eventos en vivo desde ActiveMQ y expone una interfaz web local.) Tj
+/F2 17 Tf 1 0 0 1 52.00 453.47 Tm (3. Explicación clase por clase) Tj
+/F2 13 Tf 1 0 0 1 52.00 417.69 Tm (3.1. Módulo `app`) Tj
+/F2 13 Tf 1 0 0 1 52.00 389.27 Tm (Main.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 362.85 Tm (- Paquete: `org.ulpgc.dacd.app`) Tj
+/F1 11 Tf 1 0 0 1 64.00 348.11 Tm (- Módulo: `app`) Tj
+/F1 11 Tf 1 0 0 1 64.00 333.37 Tm (- Responsabilidad: punto de entrada principal del sistema.) Tj
+/F1 11 Tf 1 0 0 1 64.00 318.63 Tm (- Qué problema resuelve: centraliza en un único flujo la inicialización de) Tj
+/F1 11 Tf 1 0 0 1 64.00 303.89 Tm (  SQLite, la captura de partidos, la captura de vuelos y la publicación de) Tj
+/F1 11 Tf 1 0 0 1 64.00 289.15 Tm (  eventos.) Tj
+/F1 11 Tf 1 0 0 1 64.00 274.41 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 259.67 Tm (- `main\(String[] args\)`) Tj
+/F1 11 Tf 1 0 0 1 64.00 244.93 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 230.19 Tm (- `DatabaseInitializer`) Tj
+/F1 11 Tf 1 0 0 1 52.00 215.45 Tm (- `OneboxTicketLinkProvider`) Tj
+/F1 11 Tf 1 0 0 1 52.00 200.71 Tm (- `ActiveMqEventPublisher`) Tj
+/F1 11 Tf 1 0 0 1 52.00 185.97 Tm (- `AwayMatchService`) Tj
+/F1 11 Tf 1 0 0 1 52.00 171.23 Tm (- `FlightInfoService`) Tj
+/F1 11 Tf 1 0 0 1 52.00 156.49 Tm (- `LaligaMatchScraper`) Tj
+/F1 11 Tf 1 0 0 1 52.00 141.75 Tm (- `AenaFlightScraper`) Tj
+/F1 11 Tf 1 0 0 1 64.00 127.01 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 112.27 Tm (- arranca la base local,) Tj
+/F1 11 Tf 1 0 0 1 52.00 97.53 Tm (- ejecuta la Fuente 1 de partidos,) Tj
+/F1 11 Tf 1 0 0 1 52.00 82.79 Tm (- muestra el enlace oficial de entradas,) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Length 3496 >>
+stream
+BT
+/F1 11 Tf 1 0 0 1 52.00 785.89 Tm (- ejecuta la Fuente 2 de vuelos.) Tj
+/F1 11 Tf 1 0 0 1 64.00 771.15 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 756.41 Tm (- por qué el flujo es secuencial y no periódico,) Tj
+/F1 11 Tf 1 0 0 1 52.00 741.67 Tm (- por qué el publisher de ActiveMQ se crea aquí,) Tj
+/F1 11 Tf 1 0 0 1 52.00 726.93 Tm (- qué ocurre si ActiveMQ no está disponible al arrancar.) Tj
+/F2 13 Tf 1 0 0 1 52.00 703.19 Tm (DatabaseInitializer.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 676.77 Tm (- Paquete: `org.ulpgc.dacd.app`) Tj
+/F1 11 Tf 1 0 0 1 64.00 662.03 Tm (- Módulo: `app`) Tj
+/F1 11 Tf 1 0 0 1 64.00 647.29 Tm (- Responsabilidad: crear la base SQLite local del feeder principal.) Tj
+/F1 11 Tf 1 0 0 1 64.00 632.55 Tm (- Qué problema resuelve: evita depender de una base creada manualmente y) Tj
+/F1 11 Tf 1 0 0 1 64.00 617.81 Tm (  garantiza que existan las tablas al ejecutar `Main`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 603.07 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 588.33 Tm (- `initialize\(\)`) Tj
+/F1 11 Tf 1 0 0 1 64.00 573.59 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 558.85 Tm (- `DatabaseConfig`) Tj
+/F1 11 Tf 1 0 0 1 52.00 544.11 Tm (- JDBC/SQLite) Tj
+/F1 11 Tf 1 0 0 1 64.00 529.37 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 514.63 Tm (- prepara `away_matches`, `flight_offers` y `flight_infos`,) Tj
+/F1 11 Tf 1 0 0 1 52.00 499.89 Tm (- crea el índice único para evitar duplicados lógicos de vuelos.) Tj
+/F1 11 Tf 1 0 0 1 64.00 485.15 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 470.41 Tm (- por qué existe una tabla `flight_offers` aunque no se use en Sprint 1,) Tj
+/F1 11 Tf 1 0 0 1 52.00 455.67 Tm (- por qué se usa un índice único en `flight_infos`,) Tj
+/F1 11 Tf 1 0 0 1 52.00 440.93 Tm (- por qué SQLite es suficiente para la fase local.) Tj
+/F2 13 Tf 1 0 0 1 52.00 417.19 Tm (3.2. Módulo `domain`) Tj
+/F2 13 Tf 1 0 0 1 52.00 388.77 Tm (Match.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 362.35 Tm (- Paquete: `org.ulpgc.dacd.domain`) Tj
+/F1 11 Tf 1 0 0 1 64.00 347.61 Tm (- Módulo: `domain`) Tj
+/F1 11 Tf 1 0 0 1 64.00 332.87 Tm (- Responsabilidad: representar un partido.) Tj
+/F1 11 Tf 1 0 0 1 64.00 318.13 Tm (- Qué problema resuelve: encapsula todos los atributos necesarios para mover un) Tj
+/F1 11 Tf 1 0 0 1 64.00 303.39 Tm (  partido entre scraping, repositorio, eventos y datamart.) Tj
+/F1 11 Tf 1 0 0 1 64.00 288.65 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 273.91 Tm (- constructor vacío,) Tj
+/F1 11 Tf 1 0 0 1 52.00 259.17 Tm (- constructor completo,) Tj
+/F1 11 Tf 1 0 0 1 52.00 244.43 Tm (- getters,) Tj
+/F1 11 Tf 1 0 0 1 52.00 229.69 Tm (- `toString\(\)`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 214.95 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 200.21 Tm (- `AwayMatchService`) Tj
+/F1 11 Tf 1 0 0 1 52.00 185.47 Tm (- `AwayMatchRepository`) Tj
+/F1 11 Tf 1 0 0 1 52.00 170.73 Tm (- `LaligaMatchScraper`) Tj
+/F1 11 Tf 1 0 0 1 52.00 155.99 Tm (- `EventStoreDatamartLoader`) Tj
+/F1 11 Tf 1 0 0 1 64.00 141.25 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 126.51 Tm (- es el modelo base de la Fuente 1.) Tj
+/F1 11 Tf 1 0 0 1 64.00 111.77 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 97.03 Tm (- por qué `matchDate` y `capturedAt` usan `LocalDateTime`,) Tj
+/F1 11 Tf 1 0 0 1 52.00 82.29 Tm (- por qué `destinationAirport` se guarda ya en el partido.) Tj
+ET
+endstream
+endobj
+6 0 obj
+<< /Length 3527 >>
+stream
+BT
+/F2 13 Tf 1 0 0 1 52.00 785.89 Tm (FlightInfo.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 759.47 Tm (- Paquete: `org.ulpgc.dacd.domain`) Tj
+/F1 11 Tf 1 0 0 1 64.00 744.73 Tm (- Módulo: `domain`) Tj
+/F1 11 Tf 1 0 0 1 64.00 729.99 Tm (- Responsabilidad: representar un vuelo capturado desde AENA.) Tj
+/F1 11 Tf 1 0 0 1 64.00 715.25 Tm (- Qué problema resuelve: unifica los datos mínimos necesarios para persistir,) Tj
+/F1 11 Tf 1 0 0 1 64.00 700.51 Tm (  publicar y consultar vuelos.) Tj
+/F1 11 Tf 1 0 0 1 64.00 685.77 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 671.03 Tm (- constructor vacío,) Tj
+/F1 11 Tf 1 0 0 1 52.00 656.29 Tm (- constructor completo,) Tj
+/F1 11 Tf 1 0 0 1 52.00 641.55 Tm (- getters,) Tj
+/F1 11 Tf 1 0 0 1 52.00 626.81 Tm (- `toString\(\)`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 612.07 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 597.33 Tm (- `AenaFlightScraper`) Tj
+/F1 11 Tf 1 0 0 1 52.00 582.59 Tm (- `FlightInfoService`) Tj
+/F1 11 Tf 1 0 0 1 52.00 567.85 Tm (- `FlightInfoRepository`) Tj
+/F1 11 Tf 1 0 0 1 64.00 553.11 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 538.37 Tm (- es el modelo base de la Fuente 2 y del topic `FlightInfo`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 523.63 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 508.89 Tm (- por qué `scheduledDateTime` se almacena como `String` y no como) Tj
+/F1 11 Tf 1 0 0 1 52.00 494.15 Tm (`LocalDateTime`,) Tj
+/F1 11 Tf 1 0 0 1 52.00 479.41 Tm (- qué campos forman la clave lógica de idempotencia.) Tj
+/F2 13 Tf 1 0 0 1 52.00 455.67 Tm (FlightOffer.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 429.25 Tm (- Paquete: `org.ulpgc.dacd.domain`) Tj
+/F1 11 Tf 1 0 0 1 64.00 414.51 Tm (- Módulo: `domain`) Tj
+/F1 11 Tf 1 0 0 1 64.00 399.77 Tm (- Responsabilidad: representar una futura oferta de vuelo con precio.) Tj
+/F1 11 Tf 1 0 0 1 64.00 385.03 Tm (- Qué problema resuelve: deja preparada una entidad para una evolución) Tj
+/F1 11 Tf 1 0 0 1 64.00 370.29 Tm (  posterior del proyecto hacia recomendaciones con precios.) Tj
+/F1 11 Tf 1 0 0 1 64.00 355.55 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 340.81 Tm (- constructores,) Tj
+/F1 11 Tf 1 0 0 1 52.00 326.07 Tm (- getters,) Tj
+/F1 11 Tf 1 0 0 1 52.00 311.33 Tm (- `toString\(\)`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 296.59 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 281.85 Tm (- actualmente no participa en el flujo principal.) Tj
+/F1 11 Tf 1 0 0 1 64.00 267.11 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 252.37 Tm (- es una pieza de extensión del dominio, no del flujo activo final.) Tj
+/F1 11 Tf 1 0 0 1 64.00 237.63 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 222.89 Tm (- por qué existe si en la entrega final no se usan precios,) Tj
+/F1 11 Tf 1 0 0 1 52.00 208.15 Tm (- cómo encajaría en un sprint posterior.) Tj
+/F2 13 Tf 1 0 0 1 52.00 184.41 Tm (AirportMapping.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 157.99 Tm (- Paquete: `org.ulpgc.dacd.domain`) Tj
+/F1 11 Tf 1 0 0 1 64.00 143.25 Tm (- Módulo: `domain`) Tj
+/F1 11 Tf 1 0 0 1 64.00 128.51 Tm (- Responsabilidad: mapear equipos locales y alias a códigos IATA.) Tj
+/F1 11 Tf 1 0 0 1 64.00 113.77 Tm (- Qué problema resuelve: la fuente de partidos conoce el rival, no el) Tj
+/F1 11 Tf 1 0 0 1 64.00 99.03 Tm (  aeropuerto; esta clase traduce equipo local a aeropuerto de destino.) Tj
+/F1 11 Tf 1 0 0 1 64.00 84.29 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 69.55 Tm (- constructor por defecto,) Tj
+ET
+endstream
+endobj
+7 0 obj
+<< /Length 3490 >>
+stream
+BT
+/F1 11 Tf 1 0 0 1 52.00 785.89 Tm (- constructor con mapa externo,) Tj
+/F1 11 Tf 1 0 0 1 52.00 771.15 Tm (- `getAirportCode\(...\)`,) Tj
+/F1 11 Tf 1 0 0 1 52.00 756.41 Tm (- `getAirportByLocation\(\)`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 741.67 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 726.93 Tm (- `AwayMatchService`) Tj
+/F1 11 Tf 1 0 0 1 64.00 712.19 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 697.45 Tm (- convierte `RC Deportivo` en `LCG`, `UD Almería` en `LEI`, etc.) Tj
+/F1 11 Tf 1 0 0 1 64.00 682.71 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 667.97 Tm (- cómo se normalizan tildes y mayúsculas,) Tj
+/F1 11 Tf 1 0 0 1 52.00 653.23 Tm (- por qué se permite búsqueda por `contains`,) Tj
+/F1 11 Tf 1 0 0 1 52.00 638.49 Tm (- qué limitaciones tiene un mapeo estático.) Tj
+/F2 13 Tf 1 0 0 1 52.00 614.75 Tm (DatabaseConfig.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 588.33 Tm (- Paquete: `org.ulpgc.dacd.domain`) Tj
+/F1 11 Tf 1 0 0 1 64.00 573.59 Tm (- Módulo: `domain`) Tj
+/F1 11 Tf 1 0 0 1 64.00 558.85 Tm (- Responsabilidad: centralizar la configuración de la base SQLite principal.) Tj
+/F1 11 Tf 1 0 0 1 64.00 544.11 Tm (- Qué problema resuelve: evita repetir la URL `jdbc:sqlite:pio_pio_fly.db`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 529.37 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 514.63 Tm (- no tiene métodos; solo constantes.) Tj
+/F1 11 Tf 1 0 0 1 64.00 499.89 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 485.15 Tm (- `DatabaseInitializer`) Tj
+/F1 11 Tf 1 0 0 1 52.00 470.41 Tm (- `AwayMatchRepository`) Tj
+/F1 11 Tf 1 0 0 1 52.00 455.67 Tm (- `FlightInfoRepository`) Tj
+/F1 11 Tf 1 0 0 1 52.00 440.93 Tm (- `FlightInfoService`) Tj
+/F1 11 Tf 1 0 0 1 64.00 426.19 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 411.45 Tm (- sirve como punto único de configuración para la base del feeder.) Tj
+/F1 11 Tf 1 0 0 1 64.00 396.71 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 381.97 Tm (- por qué separar configuración en una clase simple,) Tj
+/F1 11 Tf 1 0 0 1 52.00 367.23 Tm (- cómo cambiaría si hubiera perfiles o entornos.) Tj
+/F2 13 Tf 1 0 0 1 52.00 343.49 Tm (EventMessage.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 317.07 Tm (- Paquete: `org.ulpgc.dacd.domain`) Tj
+/F1 11 Tf 1 0 0 1 64.00 302.33 Tm (- Módulo: `domain`) Tj
+/F1 11 Tf 1 0 0 1 64.00 287.59 Tm (- Responsabilidad: representar el sobre común de todos los eventos.) Tj
+/F1 11 Tf 1 0 0 1 64.00 272.85 Tm (- Qué problema resuelve: unifica el formato `ts + ss + payload`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 258.11 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 243.37 Tm (- `capturedNow\(...\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 228.63 Tm (- `fromInstant\(...\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 213.89 Tm (- getters) Tj
+/F1 11 Tf 1 0 0 1 52.00 199.15 Tm (- `toString\(\)`) Tj
+/F1 11 Tf 1 0 0 1 64.00 184.41 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 169.67 Tm (- `ActiveMqEventPublisher`) Tj
+/F1 11 Tf 1 0 0 1 52.00 154.93 Tm (- `AwayMatchService`) Tj
+/F1 11 Tf 1 0 0 1 52.00 140.19 Tm (- `FlightInfoService`) Tj
+/F1 11 Tf 1 0 0 1 52.00 125.45 Tm (- `EventStoreManualPublisher`) Tj
+/F1 11 Tf 1 0 0 1 64.00 110.71 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 95.97 Tm (- es el contrato de eventos entre feeders, broker, event store y business unit.) Tj
+/F1 11 Tf 1 0 0 1 64.00 81.23 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+ET
+endstream
+endobj
+8 0 obj
+<< /Length 3574 >>
+stream
+BT
+/F1 11 Tf 1 0 0 1 52.00 785.89 Tm (- por qué `ts` se genera en UTC,) Tj
+/F1 11 Tf 1 0 0 1 52.00 771.15 Tm (- qué significa `ss`,) Tj
+/F1 11 Tf 1 0 0 1 52.00 756.41 Tm (- por qué el payload es un `Map<String, Object>`.) Tj
+/F2 13 Tf 1 0 0 1 52.00 732.67 Tm (EventTopics.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 706.25 Tm (- Paquete: `org.ulpgc.dacd.domain`) Tj
+/F1 11 Tf 1 0 0 1 64.00 691.51 Tm (- Módulo: `domain`) Tj
+/F1 11 Tf 1 0 0 1 64.00 676.77 Tm (- Responsabilidad: definir los nombres oficiales de topics.) Tj
+/F1 11 Tf 1 0 0 1 64.00 662.03 Tm (- Qué problema resuelve: evita strings duplicados y errores tipográficos.) Tj
+/F1 11 Tf 1 0 0 1 64.00 647.29 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 632.55 Tm (- no tiene; solo constantes `AWAY_MATCH` y `FLIGHT_INFO`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 617.81 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 603.07 Tm (- publicadores y subscribers JMS.) Tj
+/F1 11 Tf 1 0 0 1 64.00 588.33 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 573.59 Tm (- alinea todos los módulos alrededor de los mismos topics.) Tj
+/F1 11 Tf 1 0 0 1 64.00 558.85 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 544.11 Tm (- por qué es útil centralizar los nombres,) Tj
+/F1 11 Tf 1 0 0 1 52.00 529.37 Tm (- qué pasaría si cada módulo usara un literal diferente.) Tj
+/F2 13 Tf 1 0 0 1 52.00 505.63 Tm (EventPublisher.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 479.21 Tm (- Paquete: `org.ulpgc.dacd.domain`) Tj
+/F1 11 Tf 1 0 0 1 64.00 464.47 Tm (- Módulo: `domain`) Tj
+/F1 11 Tf 1 0 0 1 64.00 449.73 Tm (- Responsabilidad: definir la abstracción de publicación de eventos.) Tj
+/F1 11 Tf 1 0 0 1 64.00 434.99 Tm (- Qué problema resuelve: desacopla los servicios de captura del mecanismo) Tj
+/F1 11 Tf 1 0 0 1 64.00 420.25 Tm (  concreto de mensajería.) Tj
+/F1 11 Tf 1 0 0 1 64.00 405.51 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 390.77 Tm (- `publish\(String topicName, EventMessage eventMessage\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 376.03 Tm (- `close\(\)`) Tj
+/F1 11 Tf 1 0 0 1 64.00 361.29 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 346.55 Tm (- implementado por `ActiveMqEventPublisher`) Tj
+/F1 11 Tf 1 0 0 1 52.00 331.81 Tm (- usado por `AwayMatchService` y `FlightInfoService`) Tj
+/F1 11 Tf 1 0 0 1 64.00 317.07 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 302.33 Tm (- introduce una pequeña inversión de dependencias en la arquitectura.) Tj
+/F1 11 Tf 1 0 0 1 64.00 287.59 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 272.85 Tm (- por qué usar una interfaz y no instanciar ActiveMQ directamente en los) Tj
+/F1 11 Tf 1 0 0 1 52.00 258.11 Tm (servicios,) Tj
+/F1 11 Tf 1 0 0 1 52.00 243.37 Tm (- qué ventaja da para pruebas o futuras extensiones.) Tj
+/F2 13 Tf 1 0 0 1 52.00 219.63 Tm (ActiveMqEventPublisher.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 193.21 Tm (- Paquete: `org.ulpgc.dacd.domain`) Tj
+/F1 11 Tf 1 0 0 1 64.00 178.47 Tm (- Módulo: `domain`) Tj
+/F1 11 Tf 1 0 0 1 64.00 163.73 Tm (- Responsabilidad: publicar eventos JSON en ActiveMQ.) Tj
+/F1 11 Tf 1 0 0 1 64.00 148.99 Tm (- Qué problema resuelve: encapsula la conexión JMS, la serialización y el envío) Tj
+/F1 11 Tf 1 0 0 1 64.00 134.25 Tm (  persistente a topics.) Tj
+/F1 11 Tf 1 0 0 1 64.00 119.51 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 104.77 Tm (- constructores con broker por defecto o configurable,) Tj
+/F1 11 Tf 1 0 0 1 52.00 90.03 Tm (- `publish\(...\)`,) Tj
+/F1 11 Tf 1 0 0 1 52.00 75.29 Tm (- `close\(\)`.) Tj
+ET
+endstream
+endobj
+9 0 obj
+<< /Length 3464 >>
+stream
+BT
+/F1 11 Tf 1 0 0 1 64.00 785.89 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 771.15 Tm (- `EventPublisher`) Tj
+/F1 11 Tf 1 0 0 1 52.00 756.41 Tm (- `EventMessage`) Tj
+/F1 11 Tf 1 0 0 1 52.00 741.67 Tm (- Jackson) Tj
+/F1 11 Tf 1 0 0 1 52.00 726.93 Tm (- ActiveMQ JMS) Tj
+/F1 11 Tf 1 0 0 1 64.00 712.19 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 697.45 Tm (- es la salida común de eventos para los feeders y para el manual publisher.) Tj
+/F1 11 Tf 1 0 0 1 64.00 682.71 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 667.97 Tm (- por qué `DeliveryMode.PERSISTENT`,) Tj
+/F1 11 Tf 1 0 0 1 52.00 653.23 Tm (- cómo se cierran recursos JMS,) Tj
+/F1 11 Tf 1 0 0 1 52.00 638.49 Tm (- qué ocurre si ActiveMQ no está disponible.) Tj
+/F2 13 Tf 1 0 0 1 52.00 614.75 Tm (ResidentDiscountCalculator.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 588.33 Tm (- Paquete: `org.ulpgc.dacd.domain`) Tj
+/F1 11 Tf 1 0 0 1 64.00 573.59 Tm (- Módulo: `domain`) Tj
+/F1 11 Tf 1 0 0 1 64.00 558.85 Tm (- Responsabilidad: calcular un precio estimado con descuento de residente.) Tj
+/F1 11 Tf 1 0 0 1 64.00 544.11 Tm (- Qué problema resuelve: encapsula la regla del factor de descuento en una) Tj
+/F1 11 Tf 1 0 0 1 64.00 529.37 Tm (  clase de dominio.) Tj
+/F1 11 Tf 1 0 0 1 64.00 514.63 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 499.89 Tm (- constructor por defecto con factor `0.25`,) Tj
+/F1 11 Tf 1 0 0 1 52.00 485.15 Tm (- constructor configurable,) Tj
+/F1 11 Tf 1 0 0 1 52.00 470.41 Tm (- `estimateResidentPrice\(...\)`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 455.67 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 440.93 Tm (- de momento no participa en el flujo final.) Tj
+/F1 11 Tf 1 0 0 1 64.00 426.19 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 411.45 Tm (- es una pieza de dominio preparada para una evolución futura orientada a) Tj
+/F1 11 Tf 1 0 0 1 52.00 396.71 Tm (precios.) Tj
+/F1 11 Tf 1 0 0 1 64.00 381.97 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 367.23 Tm (- por qué está en `domain`,) Tj
+/F1 11 Tf 1 0 0 1 52.00 352.49 Tm (- cómo cambiaría si el descuento no fuera fijo.) Tj
+/F2 13 Tf 1 0 0 1 52.00 328.75 Tm (3.3. Módulo `matches-source`) Tj
+/F2 13 Tf 1 0 0 1 52.00 300.33 Tm (MatchClient.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 273.91 Tm (- Paquete: `org.ulpgc.dacd.matches`) Tj
+/F1 11 Tf 1 0 0 1 64.00 259.17 Tm (- Módulo: `matches-source`) Tj
+/F1 11 Tf 1 0 0 1 64.00 244.43 Tm (- Responsabilidad: definir el contrato para obtener partidos.) Tj
+/F1 11 Tf 1 0 0 1 64.00 229.69 Tm (- Qué problema resuelve: desacopla el servicio de captura de la implementación) Tj
+/F1 11 Tf 1 0 0 1 64.00 214.95 Tm (  concreta del scraping.) Tj
+/F1 11 Tf 1 0 0 1 64.00 200.21 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 185.47 Tm (- `fetchMatches\(\)`) Tj
+/F1 11 Tf 1 0 0 1 64.00 170.73 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 155.99 Tm (- implementado por `LaligaMatchScraper`) Tj
+/F1 11 Tf 1 0 0 1 52.00 141.25 Tm (- usado por `AwayMatchService`) Tj
+/F1 11 Tf 1 0 0 1 64.00 126.51 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 111.77 Tm (- permite que el servicio trabaje con una abstracción de fuente.) Tj
+/F1 11 Tf 1 0 0 1 64.00 97.03 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 82.29 Tm (- por qué una interfaz si solo hay una implementación,) Tj
+ET
+endstream
+endobj
+10 0 obj
+<< /Length 3406 >>
+stream
+BT
+/F1 11 Tf 1 0 0 1 52.00 785.89 Tm (- qué ventaja tendría añadir otra fuente de partidos.) Tj
+/F2 13 Tf 1 0 0 1 52.00 762.15 Tm (LaligaMatchScraper.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 735.73 Tm (- Paquete: `org.ulpgc.dacd.matches`) Tj
+/F1 11 Tf 1 0 0 1 64.00 720.99 Tm (- Módulo: `matches-source`) Tj
+/F1 11 Tf 1 0 0 1 64.00 706.25 Tm (- Responsabilidad: scrapear la página de próximos partidos de la UD Las Palmas) Tj
+/F1 11 Tf 1 0 0 1 64.00 691.51 Tm (  en LaLiga.) Tj
+/F1 11 Tf 1 0 0 1 64.00 676.77 Tm (- Qué problema resuelve: convierte HTML real en objetos `Match`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 662.03 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 647.29 Tm (- `fetchMatches\(\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 632.55 Tm (- métodos internos de parseo de filas, fecha, competición y equipos.) Tj
+/F1 11 Tf 1 0 0 1 64.00 617.81 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 603.07 Tm (- `MatchClient`) Tj
+/F1 11 Tf 1 0 0 1 52.00 588.33 Tm (- `Match`) Tj
+/F1 11 Tf 1 0 0 1 52.00 573.59 Tm (- JSoup) Tj
+/F1 11 Tf 1 0 0 1 64.00 558.85 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 544.11 Tm (- es la implementación real de la Fuente 1.) Tj
+/F1 11 Tf 1 0 0 1 64.00 529.37 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 514.63 Tm (- por qué se eligió scraping y no API oficial,) Tj
+/F1 11 Tf 1 0 0 1 52.00 499.89 Tm (- cómo se detectan filas válidas,) Tj
+/F1 11 Tf 1 0 0 1 52.00 485.15 Tm (- qué limitaciones tiene si cambia el HTML de LaLiga.) Tj
+/F2 13 Tf 1 0 0 1 52.00 461.41 Tm (AwayMatchRepository.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 434.99 Tm (- Paquete: `org.ulpgc.dacd.matches`) Tj
+/F1 11 Tf 1 0 0 1 64.00 420.25 Tm (- Módulo: `matches-source`) Tj
+/F1 11 Tf 1 0 0 1 64.00 405.51 Tm (- Responsabilidad: persistir partidos fuera de casa en SQLite.) Tj
+/F1 11 Tf 1 0 0 1 64.00 390.77 Tm (- Qué problema resuelve: aísla el acceso JDBC a `away_matches`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 376.03 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 361.29 Tm (- `save\(Match match\)`) Tj
+/F1 11 Tf 1 0 0 1 64.00 346.55 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 331.81 Tm (- `DatabaseConfig`) Tj
+/F1 11 Tf 1 0 0 1 52.00 317.07 Tm (- JDBC) Tj
+/F1 11 Tf 1 0 0 1 52.00 302.33 Tm (- `Match`) Tj
+/F1 11 Tf 1 0 0 1 64.00 287.59 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 272.85 Tm (- guarda los resultados procesados por `AwayMatchService`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 258.11 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 243.37 Tm (- por qué el repositorio no conoce ActiveMQ,) Tj
+/F1 11 Tf 1 0 0 1 52.00 228.63 Tm (- cómo se transforma un `Match` en columnas SQLite.) Tj
+/F2 13 Tf 1 0 0 1 52.00 204.89 Tm (AwayMatchService.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 178.47 Tm (- Paquete: `org.ulpgc.dacd.matches`) Tj
+/F1 11 Tf 1 0 0 1 64.00 163.73 Tm (- Módulo: `matches-source`) Tj
+/F1 11 Tf 1 0 0 1 64.00 148.99 Tm (- Responsabilidad: coordinar la captura de partidos fuera de casa.) Tj
+/F1 11 Tf 1 0 0 1 64.00 134.25 Tm (- Qué problema resuelve: concentra la lógica de negocio de la Fuente 1, no solo) Tj
+/F1 11 Tf 1 0 0 1 64.00 119.51 Tm (  el scraping.) Tj
+/F1 11 Tf 1 0 0 1 64.00 104.77 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 90.03 Tm (- `captureAwayMatches\(\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 75.29 Tm (- `isAwayMatchForUdLasPalmas\(...\)`) Tj
+ET
+endstream
+endobj
+11 0 obj
+<< /Length 3529 >>
+stream
+BT
+/F1 11 Tf 1 0 0 1 52.00 785.89 Tm (- `resolveDestinationAirport\(...\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 771.15 Tm (- `publishAwayMatchEvent\(...\)`) Tj
+/F1 11 Tf 1 0 0 1 64.00 756.41 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 741.67 Tm (- `MatchClient`) Tj
+/F1 11 Tf 1 0 0 1 52.00 726.93 Tm (- `AirportMapping`) Tj
+/F1 11 Tf 1 0 0 1 52.00 712.19 Tm (- `AwayMatchRepository`) Tj
+/F1 11 Tf 1 0 0 1 52.00 697.45 Tm (- `EventPublisher`) Tj
+/F1 11 Tf 1 0 0 1 64.00 682.71 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 667.97 Tm (- filtra los partidos en los que la UD Las Palmas actúa como visitante,) Tj
+/F1 11 Tf 1 0 0 1 52.00 653.23 Tm (- asigna el aeropuerto de destino,) Tj
+/F1 11 Tf 1 0 0 1 52.00 638.49 Tm (- guarda el partido,) Tj
+/F1 11 Tf 1 0 0 1 52.00 623.75 Tm (- publica evento `AwayMatch`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 609.01 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 594.27 Tm (- por qué esta lógica no está dentro del scraper,) Tj
+/F1 11 Tf 1 0 0 1 52.00 579.53 Tm (- cómo se reconoce que la UD Las Palmas juega fuera,) Tj
+/F1 11 Tf 1 0 0 1 52.00 564.79 Tm (- qué ocurre si no se encuentra aeropuerto para el equipo local.) Tj
+/F2 13 Tf 1 0 0 1 52.00 541.05 Tm (OneboxTicketLinkProvider.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 514.63 Tm (- Paquete: `org.ulpgc.dacd.matches`) Tj
+/F1 11 Tf 1 0 0 1 64.00 499.89 Tm (- Módulo: `matches-source`) Tj
+/F1 11 Tf 1 0 0 1 64.00 485.15 Tm (- Responsabilidad: exponer el enlace oficial de entradas de desplazamientos.) Tj
+/F1 11 Tf 1 0 0 1 64.00 470.41 Tm (- Qué problema resuelve: desacopla el enlace oficial del resto del flujo.) Tj
+/F1 11 Tf 1 0 0 1 64.00 455.67 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 440.93 Tm (- `getOfficialAwayTicketUrl\(\)`) Tj
+/F1 11 Tf 1 0 0 1 64.00 426.19 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 411.45 Tm (- `Main`) Tj
+/F1 11 Tf 1 0 0 1 64.00 396.71 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 381.97 Tm (- aporta el enlace oficial al usuario sin persistirlo en base de datos.) Tj
+/F1 11 Tf 1 0 0 1 64.00 367.23 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 352.49 Tm (- por qué no se guarda en SQLite,) Tj
+/F1 11 Tf 1 0 0 1 52.00 337.75 Tm (- por qué se aisló en una clase específica.) Tj
+/F2 13 Tf 1 0 0 1 52.00 314.01 Tm (3.4. Módulo `flights-source`) Tj
+/F2 13 Tf 1 0 0 1 52.00 285.59 Tm (FlightInfoScraper.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 259.17 Tm (- Paquete: `org.ulpgc.dacd.flights`) Tj
+/F1 11 Tf 1 0 0 1 64.00 244.43 Tm (- Módulo: `flights-source`) Tj
+/F1 11 Tf 1 0 0 1 64.00 229.69 Tm (- Responsabilidad: definir el contrato de captura de vuelos.) Tj
+/F1 11 Tf 1 0 0 1 64.00 214.95 Tm (- Qué problema resuelve: desacopla `FlightInfoService` de la implementación) Tj
+/F1 11 Tf 1 0 0 1 64.00 200.21 Tm (  concreta de AENA.) Tj
+/F1 11 Tf 1 0 0 1 64.00 185.47 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 170.73 Tm (- `fetchFlights\(String originAirport, String destinationAirport, String date\)`) Tj
+/F1 11 Tf 1 0 0 1 64.00 155.99 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 141.25 Tm (- implementado por `AenaFlightScraper`) Tj
+/F1 11 Tf 1 0 0 1 52.00 126.51 Tm (- usado por `FlightInfoService`) Tj
+/F1 11 Tf 1 0 0 1 64.00 111.77 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 97.03 Tm (- permite que el servicio de negocio hable con una abstracción, no con HTTP) Tj
+/F1 11 Tf 1 0 0 1 52.00 82.29 Tm (directamente.) Tj
+ET
+endstream
+endobj
+12 0 obj
+<< /Length 3495 >>
+stream
+BT
+/F1 11 Tf 1 0 0 1 64.00 785.89 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 771.15 Tm (- por qué una interfaz en lugar de usar directamente el scraper.) Tj
+/F2 13 Tf 1 0 0 1 52.00 747.41 Tm (AenaFlightScraper.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 720.99 Tm (- Paquete: `org.ulpgc.dacd.flights`) Tj
+/F1 11 Tf 1 0 0 1 64.00 706.25 Tm (- Módulo: `flights-source`) Tj
+/F1 11 Tf 1 0 0 1 64.00 691.51 Tm (- Responsabilidad: consultar AENA y convertir la respuesta en objetos) Tj
+/F1 11 Tf 1 0 0 1 64.00 676.77 Tm (  `FlightInfo`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 662.03 Tm (- Qué problema resuelve: encapsula la complejidad técnica del endpoint) Tj
+/F1 11 Tf 1 0 0 1 64.00 647.29 Tm (  `AENA_ConsultarVuelos`, el parseo JSON y los fallos TLS.) Tj
+/F1 11 Tf 1 0 0 1 64.00 632.55 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 617.81 Tm (- `fetchFlights\(...\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 603.07 Tm (- `scrapeFlights\(...\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 588.33 Tm (- `fetchEndpointFlights\(...\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 573.59 Tm (- `fetchFlightsFromAirport\(...\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 558.85 Tm (- `fetchAenaEndpointBody\(...\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 544.11 Tm (- `fetchAenaEndpointBodyWithSystemCurl\(...\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 529.37 Tm (- parseos y filtros internos por ruta y fecha.) Tj
+/F1 11 Tf 1 0 0 1 64.00 514.63 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 499.89 Tm (- `FlightInfoScraper`) Tj
+/F1 11 Tf 1 0 0 1 52.00 485.15 Tm (- `FlightInfo`) Tj
+/F1 11 Tf 1 0 0 1 52.00 470.41 Tm (- Jackson) Tj
+/F1 11 Tf 1 0 0 1 52.00 455.67 Tm (- `HttpClient`) Tj
+/F1 11 Tf 1 0 0 1 52.00 440.93 Tm (- `curl` del sistema como fallback remoto real) Tj
+/F1 11 Tf 1 0 0 1 64.00 426.19 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 411.45 Tm (- es la implementación real de la Fuente 2.) Tj
+/F1 11 Tf 1 0 0 1 52.00 396.71 Tm (- consulta salidas o llegadas de AENA,) Tj
+/F1 11 Tf 1 0 0 1 52.00 381.97 Tm (- filtra por origen, destino y fecha exacta,) Tj
+/F1 11 Tf 1 0 0 1 52.00 367.23 Tm (- devuelve solo vuelos válidos para el desplazamiento.) Tj
+/F1 11 Tf 1 0 0 1 64.00 352.49 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 337.75 Tm (- cómo se consulta AENA,) Tj
+/F1 11 Tf 1 0 0 1 52.00 323.01 Tm (- por qué se usa POST vacío,) Tj
+/F1 11 Tf 1 0 0 1 52.00 308.27 Tm (- por qué existe fallback con `curl`,) Tj
+/F1 11 Tf 1 0 0 1 52.00 293.53 Tm (- cómo se filtran vuelos por origen, destino y fecha,) Tj
+/F1 11 Tf 1 0 0 1 52.00 278.79 Tm (- cómo se evita usar un fallback local antiguo como si fuera dato real.) Tj
+/F2 13 Tf 1 0 0 1 52.00 255.05 Tm (FlightInfoRepository.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 228.63 Tm (- Paquete: `org.ulpgc.dacd.flights`) Tj
+/F1 11 Tf 1 0 0 1 64.00 213.89 Tm (- Módulo: `flights-source`) Tj
+/F1 11 Tf 1 0 0 1 64.00 199.15 Tm (- Responsabilidad: guardar vuelos en `flight_infos`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 184.41 Tm (- Qué problema resuelve: aísla el acceso JDBC y la lógica de upsert de vuelos.) Tj
+/F1 11 Tf 1 0 0 1 64.00 169.67 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 154.93 Tm (- `save\(FlightInfo flightInfo\)`) Tj
+/F1 11 Tf 1 0 0 1 64.00 140.19 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 125.45 Tm (- `DatabaseConfig`) Tj
+/F1 11 Tf 1 0 0 1 52.00 110.71 Tm (- JDBC) Tj
+/F1 11 Tf 1 0 0 1 52.00 95.97 Tm (- `FlightInfo`) Tj
+/F1 11 Tf 1 0 0 1 64.00 81.23 Tm (- Cómo encaja en el flujo general:) Tj
+ET
+endstream
+endobj
+13 0 obj
+<< /Length 3478 >>
+stream
+BT
+/F1 11 Tf 1 0 0 1 52.00 785.89 Tm (- persiste los vuelos capturados por AENA,) Tj
+/F1 11 Tf 1 0 0 1 52.00 771.15 Tm (- evita duplicados con `INSERT ... ON CONFLICT ... DO UPDATE`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 756.41 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 741.67 Tm (- qué campos forman la clave lógica,) Tj
+/F1 11 Tf 1 0 0 1 52.00 726.93 Tm (- por qué se usa upsert y no insert simple.) Tj
+/F2 13 Tf 1 0 0 1 52.00 703.19 Tm (FlightInfoService.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 676.77 Tm (- Paquete: `org.ulpgc.dacd.flights`) Tj
+/F1 11 Tf 1 0 0 1 64.00 662.03 Tm (- Módulo: `flights-source`) Tj
+/F1 11 Tf 1 0 0 1 64.00 647.29 Tm (- Responsabilidad: coordinar la captura de vuelos en función de los partidos) Tj
+/F1 11 Tf 1 0 0 1 64.00 632.55 Tm (  guardados.) Tj
+/F1 11 Tf 1 0 0 1 64.00 617.81 Tm (- Qué problema resuelve: transforma partidos fuera de casa en consultas) Tj
+/F1 11 Tf 1 0 0 1 64.00 603.07 Tm (  concretas a AENA.) Tj
+/F1 11 Tf 1 0 0 1 64.00 588.33 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 573.59 Tm (- `captureFlightsForAwayMatches\(\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 558.85 Tm (- `loadAwayMatches\(\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 544.11 Tm (- `buildFlightQueries\(...\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 529.37 Tm (- `publishFlightInfoEvent\(...\)`) Tj
+/F1 11 Tf 1 0 0 1 64.00 514.63 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 499.89 Tm (- `FlightInfoScraper`) Tj
+/F1 11 Tf 1 0 0 1 52.00 485.15 Tm (- `FlightInfoRepository`) Tj
+/F1 11 Tf 1 0 0 1 52.00 470.41 Tm (- `EventPublisher`) Tj
+/F1 11 Tf 1 0 0 1 52.00 455.67 Tm (- `Match`) Tj
+/F1 11 Tf 1 0 0 1 64.00 440.93 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 426.19 Tm (- lee `away_matches`,) Tj
+/F1 11 Tf 1 0 0 1 52.00 411.45 Tm (- genera consultas de ida y vuelta,) Tj
+/F1 11 Tf 1 0 0 1 52.00 396.71 Tm (- captura vuelos,) Tj
+/F1 11 Tf 1 0 0 1 52.00 381.97 Tm (- guarda en SQLite,) Tj
+/F1 11 Tf 1 0 0 1 52.00 367.23 Tm (- publica eventos `FlightInfo`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 352.49 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 337.75 Tm (- por qué la lógica de fechas no está en la web sino aquí,) Tj
+/F1 11 Tf 1 0 0 1 52.00 323.01 Tm (- cómo se calculan ida y vuelta,) Tj
+/F1 11 Tf 1 0 0 1 52.00 308.27 Tm (- qué pasa si la fecha del partido no es válida.) Tj
+/F2 13 Tf 1 0 0 1 52.00 284.53 Tm (AenaLcgDebugRunner.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 258.11 Tm (- Paquete: `org.ulpgc.dacd.flights`) Tj
+/F1 11 Tf 1 0 0 1 64.00 243.37 Tm (- Módulo: `flights-source`) Tj
+/F1 11 Tf 1 0 0 1 64.00 228.63 Tm (- Responsabilidad: ejecutar un diagnóstico acotado para el caso `LPA -> LCG`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 213.89 Tm (- Qué problema resuelve: permite verificar el scraper sin insertar datos ni) Tj
+/F1 11 Tf 1 0 0 1 64.00 199.15 Tm (  publicar eventos.) Tj
+/F1 11 Tf 1 0 0 1 64.00 184.41 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 169.67 Tm (- `main\(String[] args\)`) Tj
+/F1 11 Tf 1 0 0 1 64.00 154.93 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 140.19 Tm (- `AenaFlightScraper`) Tj
+/F1 11 Tf 1 0 0 1 64.00 125.45 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 110.71 Tm (- no forma parte del flujo de producción; es una utilidad de diagnóstico.) Tj
+/F1 11 Tf 1 0 0 1 64.00 95.97 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 81.23 Tm (- por qué fue útil para depurar AENA,) Tj
+ET
+endstream
+endobj
+14 0 obj
+<< /Length 3358 >>
+stream
+BT
+/F1 11 Tf 1 0 0 1 52.00 785.89 Tm (- por qué no guarda en base de datos.) Tj
+/F2 13 Tf 1 0 0 1 52.00 762.15 Tm (3.5. Módulo `event-store-builder`) Tj
+/F2 13 Tf 1 0 0 1 52.00 733.73 Tm (EventStoreBuilderApp.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 707.31 Tm (- Paquete: `org.ulpgc.dacd.eventstore`) Tj
+/F1 11 Tf 1 0 0 1 64.00 692.57 Tm (- Módulo: `event-store-builder`) Tj
+/F1 11 Tf 1 0 0 1 64.00 677.83 Tm (- Responsabilidad: arrancar el subscriber durable del event store.) Tj
+/F1 11 Tf 1 0 0 1 64.00 663.09 Tm (- Qué problema resuelve: expone un proceso dedicado y separado para construir) Tj
+/F1 11 Tf 1 0 0 1 64.00 648.35 Tm (  el histórico de eventos.) Tj
+/F1 11 Tf 1 0 0 1 64.00 633.61 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 618.87 Tm (- `main\(String[] args\)`) Tj
+/F1 11 Tf 1 0 0 1 64.00 604.13 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 589.39 Tm (- `ActiveMqEventStoreSubscriber`) Tj
+/F1 11 Tf 1 0 0 1 52.00 574.65 Tm (- `EventStoreWriter`) Tj
+/F1 11 Tf 1 0 0 1 52.00 559.91 Tm (- `EventTopics`) Tj
+/F1 11 Tf 1 0 0 1 64.00 545.17 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 530.43 Tm (- mantiene vivo el proceso que escucha ActiveMQ y escribe en disco.) Tj
+/F1 11 Tf 1 0 0 1 64.00 515.69 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 500.95 Tm (- por qué está separada de `app`,) Tj
+/F1 11 Tf 1 0 0 1 52.00 486.21 Tm (- por qué usa `CountDownLatch` y `shutdown hook`.) Tj
+/F2 13 Tf 1 0 0 1 52.00 462.47 Tm (ActiveMqEventStoreSubscriber.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 436.05 Tm (- Paquete: `org.ulpgc.dacd.eventstore`) Tj
+/F1 11 Tf 1 0 0 1 64.00 421.31 Tm (- Módulo: `event-store-builder`) Tj
+/F1 11 Tf 1 0 0 1 64.00 406.57 Tm (- Responsabilidad: suscribirse durablemente a los topics y reenviar eventos al) Tj
+/F1 11 Tf 1 0 0 1 64.00 391.83 Tm (  escritor del event store.) Tj
+/F1 11 Tf 1 0 0 1 64.00 377.09 Tm (- Qué problema resuelve: encapsula reconexión JMS, suscripciones durables y) Tj
+/F1 11 Tf 1 0 0 1 64.00 362.35 Tm (  tratamiento de mensajes.) Tj
+/F1 11 Tf 1 0 0 1 64.00 347.61 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 332.87 Tm (- `start\(\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 318.13 Tm (- `close\(\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 303.39 Tm (- `runSubscriber\(\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 288.65 Tm (- `connectAndSubscribe\(\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 273.91 Tm (- `handleMessage\(...\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 259.17 Tm (- `createDurableSubscription\(...\)`) Tj
+/F1 11 Tf 1 0 0 1 64.00 244.43 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 229.69 Tm (- ActiveMQ JMS) Tj
+/F1 11 Tf 1 0 0 1 52.00 214.95 Tm (- `EventStoreWriter`) Tj
+/F1 11 Tf 1 0 0 1 64.00 200.21 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 185.47 Tm (- escucha `AwayMatch` y `FlightInfo`,) Tj
+/F1 11 Tf 1 0 0 1 52.00 170.73 Tm (- recibe `TextMessage`,) Tj
+/F1 11 Tf 1 0 0 1 52.00 155.99 Tm (- escribe el JSON original en el event store.) Tj
+/F1 11 Tf 1 0 0 1 64.00 141.25 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 126.51 Tm (- qué es una suscripción durable,) Tj
+/F1 11 Tf 1 0 0 1 52.00 111.77 Tm (- por qué usa un `clientId` estable,) Tj
+/F1 11 Tf 1 0 0 1 52.00 97.03 Tm (- cómo reacciona si ActiveMQ se cae.) Tj
+/F2 13 Tf 1 0 0 1 52.00 73.29 Tm (EventStoreWriter.java) Tj
+ET
+endstream
+endobj
+15 0 obj
+<< /Length 3505 >>
+stream
+BT
+/F1 11 Tf 1 0 0 1 64.00 785.89 Tm (- Paquete: `org.ulpgc.dacd.eventstore`) Tj
+/F1 11 Tf 1 0 0 1 64.00 771.15 Tm (- Módulo: `event-store-builder`) Tj
+/F1 11 Tf 1 0 0 1 64.00 756.41 Tm (- Responsabilidad: persistir eventos consumidos en ficheros NDJSON.) Tj
+/F1 11 Tf 1 0 0 1 64.00 741.67 Tm (- Qué problema resuelve: traduce un evento JSON en una línea dentro de) Tj
+/F1 11 Tf 1 0 0 1 64.00 726.93 Tm (  `eventstore/{topic}/{ss}/{YYYYMMDD}.events`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 712.19 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 697.45 Tm (- `append\(String topic, String eventJson\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 682.71 Tm (- `dayFromTimestamp\(...\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 667.97 Tm (- `toJsonLine\(...\)`) Tj
+/F1 11 Tf 1 0 0 1 64.00 653.23 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 638.49 Tm (- Jackson) Tj
+/F1 11 Tf 1 0 0 1 52.00 623.75 Tm (- `Files`/NIO) Tj
+/F1 11 Tf 1 0 0 1 64.00 609.01 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 594.27 Tm (- es el escritor del histórico del sistema.) Tj
+/F1 11 Tf 1 0 0 1 64.00 579.53 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 564.79 Tm (- por qué se usa NDJSON,) Tj
+/F1 11 Tf 1 0 0 1 52.00 550.05 Tm (- cómo se calcula el nombre diario a partir de `ts` en UTC,) Tj
+/F1 11 Tf 1 0 0 1 52.00 535.31 Tm (- por qué se hace `append` y no sobrescritura.) Tj
+/F2 13 Tf 1 0 0 1 52.00 511.57 Tm (EventStoreManualPublisher.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 485.15 Tm (- Paquete: `org.ulpgc.dacd.eventstore`) Tj
+/F1 11 Tf 1 0 0 1 64.00 470.41 Tm (- Módulo: `event-store-builder`) Tj
+/F1 11 Tf 1 0 0 1 64.00 455.67 Tm (- Responsabilidad: publicar eventos manuales de prueba.) Tj
+/F1 11 Tf 1 0 0 1 64.00 440.93 Tm (- Qué problema resuelve: facilita probar ActiveMQ y el subscriber sin depender) Tj
+/F1 11 Tf 1 0 0 1 64.00 426.19 Tm (  de LaLiga o AENA.) Tj
+/F1 11 Tf 1 0 0 1 64.00 411.45 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 396.71 Tm (- `main\(String[] args\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 381.97 Tm (- `publishAwayMatchEvent\(...\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 367.23 Tm (- `publishFlightInfoEvent\(...\)`) Tj
+/F1 11 Tf 1 0 0 1 64.00 352.49 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 337.75 Tm (- `ActiveMqEventPublisher`) Tj
+/F1 11 Tf 1 0 0 1 52.00 323.01 Tm (- `EventMessage`) Tj
+/F1 11 Tf 1 0 0 1 52.00 308.27 Tm (- `EventTopics`) Tj
+/F1 11 Tf 1 0 0 1 64.00 293.53 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 278.79 Tm (- es una herramienta auxiliar de demo y diagnóstico.) Tj
+/F1 11 Tf 1 0 0 1 64.00 264.05 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 249.31 Tm (- por qué los datos manuales se excluyen del dashboard público,) Tj
+/F1 11 Tf 1 0 0 1 52.00 234.57 Tm (- por qué sigue siendo útil aunque no sea parte del flujo final.) Tj
+/F2 13 Tf 1 0 0 1 52.00 210.83 Tm (3.6. Módulo `business-unit`) Tj
+/F2 13 Tf 1 0 0 1 52.00 182.41 Tm (BusinessUnitConfig.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 155.99 Tm (- Paquete: `org.ulpgc.dacd.business`) Tj
+/F1 11 Tf 1 0 0 1 64.00 141.25 Tm (- Módulo: `business-unit`) Tj
+/F1 11 Tf 1 0 0 1 64.00 126.51 Tm (- Responsabilidad: centralizar la configuración de la unidad de negocio.) Tj
+/F1 11 Tf 1 0 0 1 64.00 111.77 Tm (- Qué problema resuelve: evita dispersar broker, client ID, base SQLite, ruta) Tj
+/F1 11 Tf 1 0 0 1 64.00 97.03 Tm (  del event store y puerto web.) Tj
+/F1 11 Tf 1 0 0 1 64.00 82.29 Tm (- Métodos principales:) Tj
+ET
+endstream
+endobj
+16 0 obj
+<< /Length 3462 >>
+stream
+BT
+/F1 11 Tf 1 0 0 1 52.00 785.89 Tm (- no tiene; solo constantes.) Tj
+/F1 11 Tf 1 0 0 1 64.00 771.15 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 756.41 Tm (- `BusinessUnitApp`) Tj
+/F1 11 Tf 1 0 0 1 52.00 741.67 Tm (- `DatamartInitializer`) Tj
+/F1 11 Tf 1 0 0 1 52.00 726.93 Tm (- `BusinessUnitWebServer`) Tj
+/F1 11 Tf 1 0 0 1 52.00 712.19 Tm (- `EventStoreDatamartLoader`) Tj
+/F1 11 Tf 1 0 0 1 64.00 697.45 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 682.71 Tm (- es el punto común de configuración del módulo.) Tj
+/F1 11 Tf 1 0 0 1 64.00 667.97 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 653.23 Tm (- por qué hay una base distinta \(`business_unit.db`\) separada de) Tj
+/F1 11 Tf 1 0 0 1 52.00 638.49 Tm (`pio_pio_fly.db`.) Tj
+/F2 13 Tf 1 0 0 1 52.00 614.75 Tm (BusinessUnitApp.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 588.33 Tm (- Paquete: `org.ulpgc.dacd.business`) Tj
+/F1 11 Tf 1 0 0 1 64.00 573.59 Tm (- Módulo: `business-unit`) Tj
+/F1 11 Tf 1 0 0 1 64.00 558.85 Tm (- Responsabilidad: arrancar la unidad de negocio.) Tj
+/F1 11 Tf 1 0 0 1 64.00 544.11 Tm (- Qué problema resuelve: coordina la preparación del datamart, la recarga) Tj
+/F1 11 Tf 1 0 0 1 64.00 529.37 Tm (  histórica, la sincronización en vivo y la web.) Tj
+/F1 11 Tf 1 0 0 1 64.00 514.63 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 499.89 Tm (- `main\(String[] args\)`) Tj
+/F1 11 Tf 1 0 0 1 64.00 485.15 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 470.41 Tm (- `DatamartInitializer`) Tj
+/F1 11 Tf 1 0 0 1 52.00 455.67 Tm (- `DatamartRepository`) Tj
+/F1 11 Tf 1 0 0 1 52.00 440.93 Tm (- `EventStoreDatamartLoader`) Tj
+/F1 11 Tf 1 0 0 1 52.00 426.19 Tm (- `BusinessUnitEventSubscriber`) Tj
+/F1 11 Tf 1 0 0 1 52.00 411.45 Tm (- `BusinessUnitWebServer`) Tj
+/F1 11 Tf 1 0 0 1 64.00 396.71 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 381.97 Tm (- inicializa el datamart,) Tj
+/F1 11 Tf 1 0 0 1 52.00 367.23 Tm (- recarga históricos desde el event store,) Tj
+/F1 11 Tf 1 0 0 1 52.00 352.49 Tm (- inicia la sincronización en vivo,) Tj
+/F1 11 Tf 1 0 0 1 52.00 337.75 Tm (- arranca la web en `localhost:8080`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 323.01 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 308.27 Tm (- por qué la recarga histórica se hace al arranque,) Tj
+/F1 11 Tf 1 0 0 1 52.00 293.53 Tm (- qué pasa si ActiveMQ está caído,) Tj
+/F1 11 Tf 1 0 0 1 52.00 278.79 Tm (- por qué la interfaz pública principal es la web y no la CLI.) Tj
+/F2 13 Tf 1 0 0 1 52.00 255.05 Tm (BusinessUnitCli.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 228.63 Tm (- Paquete: `org.ulpgc.dacd.business`) Tj
+/F1 11 Tf 1 0 0 1 64.00 213.89 Tm (- Módulo: `business-unit`) Tj
+/F1 11 Tf 1 0 0 1 64.00 199.15 Tm (- Responsabilidad: ofrecer una interfaz de consola interactiva.) Tj
+/F1 11 Tf 1 0 0 1 64.00 184.41 Tm (- Qué problema resuelve: proporciona una UI alternativa para consultar el) Tj
+/F1 11 Tf 1 0 0 1 64.00 169.67 Tm (  datamart y probar el módulo sin navegador.) Tj
+/F1 11 Tf 1 0 0 1 64.00 154.93 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 140.19 Tm (- `start\(\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 125.45 Tm (- `showUpcomingAwayMatches\(\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 110.71 Tm (- `showFlightsByDestination\(...\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 95.97 Tm (- `showTravelRecommendations\(\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 81.23 Tm (- `showDatamartSummary\(\)`) Tj
+ET
+endstream
+endobj
+17 0 obj
+<< /Length 3605 >>
+stream
+BT
+/F1 11 Tf 1 0 0 1 52.00 785.89 Tm (- `reloadEventStoreHistory\(\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 771.15 Tm (- `showBusinessUnitStatus\(\)`) Tj
+/F1 11 Tf 1 0 0 1 64.00 756.41 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 741.67 Tm (- `DatamartRepository`) Tj
+/F1 11 Tf 1 0 0 1 52.00 726.93 Tm (- `EventStoreDatamartLoader`) Tj
+/F1 11 Tf 1 0 0 1 52.00 712.19 Tm (- `BusinessUnitEventSubscriber`) Tj
+/F1 11 Tf 1 0 0 1 64.00 697.45 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 682.71 Tm (- es una interfaz secundaria conservada en el proyecto.) Tj
+/F1 11 Tf 1 0 0 1 64.00 667.97 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 653.23 Tm (- por qué se mantuvo aunque la entrega final tenga web,) Tj
+/F1 11 Tf 1 0 0 1 52.00 638.49 Tm (- cómo reutiliza el mismo repositorio del dashboard.) Tj
+/F2 13 Tf 1 0 0 1 52.00 614.75 Tm (BusinessUnitWebServer.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 588.33 Tm (- Paquete: `org.ulpgc.dacd.business`) Tj
+/F1 11 Tf 1 0 0 1 64.00 573.59 Tm (- Módulo: `business-unit`) Tj
+/F1 11 Tf 1 0 0 1 64.00 558.85 Tm (- Responsabilidad: exponer API REST y dashboard web local.) Tj
+/F1 11 Tf 1 0 0 1 64.00 544.11 Tm (- Qué problema resuelve: convierte el datamart en una interfaz usable por el) Tj
+/F1 11 Tf 1 0 0 1 64.00 529.37 Tm (  usuario final.) Tj
+/F1 11 Tf 1 0 0 1 64.00 514.63 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 499.89 Tm (- `start\(\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 485.15 Tm (- `stop\(\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 470.41 Tm (- handlers de `/`, `/api/status`, `/api/summary`, `/api/matches`,) Tj
+/F1 11 Tf 1 0 0 1 52.00 455.67 Tm (`/api/next-trip`,) Tj
+/F1 11 Tf 1 0 0 1 52.00 440.93 Tm (`/api/destinations`, `/api/flights`, `/api/recommendations`,) Tj
+/F1 11 Tf 1 0 0 1 52.00 426.19 Tm (`/api/reload-eventstore`, `/api/live-sync/start`, `/api/live-sync/stop`) Tj
+/F1 11 Tf 1 0 0 1 52.00 411.45 Tm (- métodos auxiliares `sendJson\(...\)`, `sendHtml\(...\)`, `sendError\(...\)`, parseo) Tj
+/F1 11 Tf 1 0 0 1 52.00 396.71 Tm (de query y lectura del logo.) Tj
+/F1 11 Tf 1 0 0 1 64.00 381.97 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 367.23 Tm (- `DatamartRepository`) Tj
+/F1 11 Tf 1 0 0 1 52.00 352.49 Tm (- `EventStoreDatamartLoader`) Tj
+/F1 11 Tf 1 0 0 1 52.00 337.75 Tm (- `BusinessUnitEventSubscriber`) Tj
+/F1 11 Tf 1 0 0 1 52.00 323.01 Tm (- `HttpServer`) Tj
+/F1 11 Tf 1 0 0 1 52.00 308.27 Tm (- Jackson) Tj
+/F1 11 Tf 1 0 0 1 64.00 293.53 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 278.79 Tm (- es la capa final de presentación del proyecto.) Tj
+/F1 11 Tf 1 0 0 1 64.00 264.05 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 249.31 Tm (- por qué se usó `HttpServer` de Java y no Spring,) Tj
+/F1 11 Tf 1 0 0 1 52.00 234.57 Tm (- cómo se separa API interna y dashboard público,) Tj
+/F1 11 Tf 1 0 0 1 52.00 219.83 Tm (- cómo se calculan y muestran los vuelos de ida y vuelta del siguiente) Tj
+/F1 11 Tf 1 0 0 1 52.00 205.09 Tm (desplazamiento.) Tj
+/F2 13 Tf 1 0 0 1 52.00 181.35 Tm (BusinessUnitEventSubscriber.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 154.93 Tm (- Paquete: `org.ulpgc.dacd.business`) Tj
+/F1 11 Tf 1 0 0 1 64.00 140.19 Tm (- Módulo: `business-unit`) Tj
+/F1 11 Tf 1 0 0 1 64.00 125.45 Tm (- Responsabilidad: consumir eventos de ActiveMQ y actualizar el datamart en) Tj
+/F1 11 Tf 1 0 0 1 64.00 110.71 Tm (  vivo.) Tj
+/F1 11 Tf 1 0 0 1 64.00 95.97 Tm (- Qué problema resuelve: da capacidad de refresco en tiempo real sin depender) Tj
+/F1 11 Tf 1 0 0 1 64.00 81.23 Tm (  solo de recargas históricas.) Tj
+ET
+endstream
+endobj
+18 0 obj
+<< /Length 3357 >>
+stream
+BT
+/F1 11 Tf 1 0 0 1 64.00 785.89 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 771.15 Tm (- `start\(\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 756.41 Tm (- `stop\(\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 741.67 Tm (- `isActive\(\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 726.93 Tm (- `runSubscriber\(\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 712.19 Tm (- `connect\(\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 697.45 Tm (- `handleMessage\(...\)`) Tj
+/F1 11 Tf 1 0 0 1 64.00 682.71 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 667.97 Tm (- ActiveMQ JMS) Tj
+/F1 11 Tf 1 0 0 1 52.00 653.23 Tm (- Jackson) Tj
+/F1 11 Tf 1 0 0 1 52.00 638.49 Tm (- `DatamartRepository`) Tj
+/F1 11 Tf 1 0 0 1 64.00 623.75 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 609.01 Tm (- escucha los mismos topics que el event store,) Tj
+/F1 11 Tf 1 0 0 1 52.00 594.27 Tm (- actualiza `business_unit.db` directamente con upserts.) Tj
+/F1 11 Tf 1 0 0 1 64.00 579.53 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 564.79 Tm (- cómo evita arrancar dos veces,) Tj
+/F1 11 Tf 1 0 0 1 52.00 550.05 Tm (- cómo reconecta tras una caída,) Tj
+/F1 11 Tf 1 0 0 1 52.00 535.31 Tm (- por qué la business unit puede seguir arrancando aunque el broker no esté) Tj
+/F1 11 Tf 1 0 0 1 52.00 520.57 Tm (disponible.) Tj
+/F2 13 Tf 1 0 0 1 52.00 496.83 Tm (DatamartInitializer.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 470.41 Tm (- Paquete: `org.ulpgc.dacd.business`) Tj
+/F1 11 Tf 1 0 0 1 64.00 455.67 Tm (- Módulo: `business-unit`) Tj
+/F1 11 Tf 1 0 0 1 64.00 440.93 Tm (- Responsabilidad: crear la base `business_unit.db`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 426.19 Tm (- Qué problema resuelve: garantiza que el datamart exista con sus tablas e) Tj
+/F1 11 Tf 1 0 0 1 64.00 411.45 Tm (  índices.) Tj
+/F1 11 Tf 1 0 0 1 64.00 396.71 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 381.97 Tm (- `initialize\(\)`) Tj
+/F1 11 Tf 1 0 0 1 64.00 367.23 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 352.49 Tm (- `BusinessUnitConfig`) Tj
+/F1 11 Tf 1 0 0 1 52.00 337.75 Tm (- JDBC/SQLite) Tj
+/F1 11 Tf 1 0 0 1 64.00 323.01 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 308.27 Tm (- prepara `away_matches_datamart` y `flight_infos_datamart`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 293.53 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 278.79 Tm (- por qué el datamart es una base separada,) Tj
+/F1 11 Tf 1 0 0 1 52.00 264.05 Tm (- qué índices únicos se usan para evitar duplicados.) Tj
+/F2 13 Tf 1 0 0 1 52.00 240.31 Tm (DatamartRepository.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 213.89 Tm (- Paquete: `org.ulpgc.dacd.business`) Tj
+/F1 11 Tf 1 0 0 1 64.00 199.15 Tm (- Módulo: `business-unit`) Tj
+/F1 11 Tf 1 0 0 1 64.00 184.41 Tm (- Responsabilidad: centralizar toda la persistencia y consulta del datamart.) Tj
+/F1 11 Tf 1 0 0 1 64.00 169.67 Tm (- Qué problema resuelve: concentra en una sola clase el acceso JDBC de negocio.) Tj
+/F1 11 Tf 1 0 0 1 64.00 154.93 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 140.19 Tm (- `getSummary\(\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 125.45 Tm (- `saveAwayMatchFromEvent\(...\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 110.71 Tm (- `saveFlightInfoFromEvent\(...\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 95.97 Tm (- `findUpcomingAwayMatches\(\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 81.23 Tm (- `findFlightsByDestination\(...\)`) Tj
+ET
+endstream
+endobj
+19 0 obj
+<< /Length 3482 >>
+stream
+BT
+/F1 11 Tf 1 0 0 1 52.00 785.89 Tm (- `findAvailableDestinations\(\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 771.15 Tm (- `buildTravelRecommendations\(\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 756.41 Tm (- `findNextAwayMatchWithFlights\(\)`) Tj
+/F1 11 Tf 1 0 0 1 64.00 741.67 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 726.93 Tm (- `DatamartSummary`) Tj
+/F1 11 Tf 1 0 0 1 52.00 712.19 Tm (- `AwayMatchView`) Tj
+/F1 11 Tf 1 0 0 1 52.00 697.45 Tm (- `FlightInfoView`) Tj
+/F1 11 Tf 1 0 0 1 52.00 682.71 Tm (- `TravelRecommendation`) Tj
+/F1 11 Tf 1 0 0 1 52.00 667.97 Tm (- `NextTripView`) Tj
+/F1 11 Tf 1 0 0 1 64.00 653.23 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 638.49 Tm (- es el núcleo de consulta de la business unit.) Tj
+/F1 11 Tf 1 0 0 1 52.00 623.75 Tm (- también deduplica partidos y vuelos,) Tj
+/F1 11 Tf 1 0 0 1 52.00 609.01 Tm (- excluye fuentes manuales del dashboard público,) Tj
+/F1 11 Tf 1 0 0 1 52.00 594.27 Tm (- calcula ventanas temporales de ida y vuelta alrededor del partido.) Tj
+/F1 11 Tf 1 0 0 1 64.00 579.53 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 564.79 Tm (- cómo funciona el upsert del datamart,) Tj
+/F1 11 Tf 1 0 0 1 52.00 550.05 Tm (- cómo se reconstruye el estado desde eventos,) Tj
+/F1 11 Tf 1 0 0 1 52.00 535.31 Tm (- cómo se deduplican partidos y vuelos,) Tj
+/F1 11 Tf 1 0 0 1 52.00 520.57 Tm (- cómo se elige el siguiente desplazamiento.) Tj
+/F2 13 Tf 1 0 0 1 52.00 496.83 Tm (DatamartSummary.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 470.41 Tm (- Paquete: `org.ulpgc.dacd.business`) Tj
+/F1 11 Tf 1 0 0 1 64.00 455.67 Tm (- Módulo: `business-unit`) Tj
+/F1 11 Tf 1 0 0 1 64.00 440.93 Tm (- Responsabilidad: representar un resumen agregado del datamart.) Tj
+/F1 11 Tf 1 0 0 1 64.00 426.19 Tm (- Qué problema resuelve: agrupa métricas de negocio en una sola estructura) Tj
+/F1 11 Tf 1 0 0 1 64.00 411.45 Tm (  simple.) Tj
+/F1 11 Tf 1 0 0 1 64.00 396.71 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 381.97 Tm (- al ser `record`, expone automáticamente sus componentes.) Tj
+/F1 11 Tf 1 0 0 1 64.00 367.23 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 352.49 Tm (- `DatamartRepository`) Tj
+/F1 11 Tf 1 0 0 1 52.00 337.75 Tm (- `BusinessUnitCli`) Tj
+/F1 11 Tf 1 0 0 1 52.00 323.01 Tm (- `BusinessUnitWebServer`) Tj
+/F1 11 Tf 1 0 0 1 64.00 308.27 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 293.53 Tm (- sirve al resumen de estado y a la API REST.) Tj
+/F1 11 Tf 1 0 0 1 64.00 278.79 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 264.05 Tm (- por qué un `record` es adecuado aquí,) Tj
+/F1 11 Tf 1 0 0 1 52.00 249.31 Tm (- qué métricas se consideran relevantes.) Tj
+/F2 13 Tf 1 0 0 1 52.00 225.57 Tm (EventStoreDatamartLoader.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 199.15 Tm (- Paquete: `org.ulpgc.dacd.business`) Tj
+/F1 11 Tf 1 0 0 1 64.00 184.41 Tm (- Módulo: `business-unit`) Tj
+/F1 11 Tf 1 0 0 1 64.00 169.67 Tm (- Responsabilidad: recargar el datamart desde el event store histórico.) Tj
+/F1 11 Tf 1 0 0 1 64.00 154.93 Tm (- Qué problema resuelve: permite reconstruir o inicializar el datamart sin) Tj
+/F1 11 Tf 1 0 0 1 64.00 140.19 Tm (  depender del broker en tiempo real.) Tj
+/F1 11 Tf 1 0 0 1 64.00 125.45 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 110.71 Tm (- `load\(\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 95.97 Tm (- `loadFile\(...\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 81.23 Tm (- `loadLine\(...\)`) Tj
+ET
+endstream
+endobj
+20 0 obj
+<< /Length 3532 >>
+stream
+BT
+/F1 11 Tf 1 0 0 1 52.00 785.89 Tm (- `saveAwayMatch\(...\)`) Tj
+/F1 11 Tf 1 0 0 1 52.00 771.15 Tm (- `saveFlightInfo\(...\)`) Tj
+/F1 11 Tf 1 0 0 1 64.00 756.41 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 741.67 Tm (- Jackson) Tj
+/F1 11 Tf 1 0 0 1 52.00 726.93 Tm (- `DatamartRepository`) Tj
+/F1 11 Tf 1 0 0 1 52.00 712.19 Tm (- `DatamartLoadResult`) Tj
+/F1 11 Tf 1 0 0 1 52.00 697.45 Tm (- `EventTopics`) Tj
+/F1 11 Tf 1 0 0 1 64.00 682.71 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 667.97 Tm (- es la capa batch/histórica de la arquitectura Lambda simplificada.) Tj
+/F1 11 Tf 1 0 0 1 64.00 653.23 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 638.49 Tm (- cómo extrae el topic desde la ruta,) Tj
+/F1 11 Tf 1 0 0 1 52.00 623.75 Tm (- qué ocurre si faltan `ts`, `ss` o `payload`,) Tj
+/F1 11 Tf 1 0 0 1 52.00 609.01 Tm (- cómo decide si un evento se carga o se omite.) Tj
+/F2 13 Tf 1 0 0 1 52.00 585.27 Tm (DatamartLoadResult.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 558.85 Tm (- Paquete: `org.ulpgc.dacd.business`) Tj
+/F1 11 Tf 1 0 0 1 64.00 544.11 Tm (- Módulo: `business-unit`) Tj
+/F1 11 Tf 1 0 0 1 64.00 529.37 Tm (- Responsabilidad: representar el resultado de una recarga histórica.) Tj
+/F1 11 Tf 1 0 0 1 64.00 514.63 Tm (- Qué problema resuelve: devuelve métricas claras del proceso de carga.) Tj
+/F1 11 Tf 1 0 0 1 64.00 499.89 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 485.15 Tm (- al ser `record`, expone directamente sus componentes.) Tj
+/F1 11 Tf 1 0 0 1 64.00 470.41 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 455.67 Tm (- `EventStoreDatamartLoader`) Tj
+/F1 11 Tf 1 0 0 1 52.00 440.93 Tm (- `BusinessUnitCli`) Tj
+/F1 11 Tf 1 0 0 1 52.00 426.19 Tm (- `BusinessUnitWebServer`) Tj
+/F1 11 Tf 1 0 0 1 52.00 411.45 Tm (- `BusinessUnitApp`) Tj
+/F1 11 Tf 1 0 0 1 64.00 396.71 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 381.97 Tm (- informa cuántos eventos se procesaron, cargaron, omitieron o fallaron.) Tj
+/F1 11 Tf 1 0 0 1 64.00 367.23 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 352.49 Tm (- por qué es útil devolver un resumen estructurado y no solo logs.) Tj
+/F2 13 Tf 1 0 0 1 52.00 328.75 Tm (AwayMatchView.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 302.33 Tm (- Paquete: `org.ulpgc.dacd.business`) Tj
+/F1 11 Tf 1 0 0 1 64.00 287.59 Tm (- Módulo: `business-unit`) Tj
+/F1 11 Tf 1 0 0 1 64.00 272.85 Tm (- Responsabilidad: representar un partido listo para consulta en el datamart.) Tj
+/F1 11 Tf 1 0 0 1 64.00 258.11 Tm (- Qué problema resuelve: separa la vista de consulta de la entidad de captura) Tj
+/F1 11 Tf 1 0 0 1 64.00 243.37 Tm (  original.) Tj
+/F1 11 Tf 1 0 0 1 64.00 228.63 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 213.89 Tm (- componentes del `record`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 199.15 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 184.41 Tm (- `DatamartRepository`) Tj
+/F1 11 Tf 1 0 0 1 52.00 169.67 Tm (- `BusinessUnitCli`) Tj
+/F1 11 Tf 1 0 0 1 52.00 154.93 Tm (- `BusinessUnitWebServer`) Tj
+/F1 11 Tf 1 0 0 1 64.00 140.19 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 125.45 Tm (- es la proyección de partidos usada por la capa de consulta.) Tj
+/F1 11 Tf 1 0 0 1 64.00 110.71 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 95.97 Tm (- por qué usar una vista específica y no reutilizar `Match`.) Tj
+/F2 13 Tf 1 0 0 1 52.00 72.23 Tm (FlightInfoView.java) Tj
+ET
+endstream
+endobj
+21 0 obj
+<< /Length 3542 >>
+stream
+BT
+/F1 11 Tf 1 0 0 1 64.00 785.89 Tm (- Paquete: `org.ulpgc.dacd.business`) Tj
+/F1 11 Tf 1 0 0 1 64.00 771.15 Tm (- Módulo: `business-unit`) Tj
+/F1 11 Tf 1 0 0 1 64.00 756.41 Tm (- Responsabilidad: representar un vuelo listo para consulta.) Tj
+/F1 11 Tf 1 0 0 1 64.00 741.67 Tm (- Qué problema resuelve: desacopla la lectura del datamart de la entidad) Tj
+/F1 11 Tf 1 0 0 1 64.00 726.93 Tm (  `FlightInfo` original.) Tj
+/F1 11 Tf 1 0 0 1 64.00 712.19 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 697.45 Tm (- componentes del `record`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 682.71 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 667.97 Tm (- `DatamartRepository`) Tj
+/F1 11 Tf 1 0 0 1 52.00 653.23 Tm (- `BusinessUnitCli`) Tj
+/F1 11 Tf 1 0 0 1 52.00 638.49 Tm (- `BusinessUnitWebServer`) Tj
+/F1 11 Tf 1 0 0 1 64.00 623.75 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 609.01 Tm (- es la proyección de vuelos usada por API y dashboard.) Tj
+/F1 11 Tf 1 0 0 1 64.00 594.27 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 579.53 Tm (- por qué separar entidad y vista de lectura.) Tj
+/F2 13 Tf 1 0 0 1 52.00 555.79 Tm (TravelRecommendation.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 529.37 Tm (- Paquete: `org.ulpgc.dacd.business`) Tj
+/F1 11 Tf 1 0 0 1 64.00 514.63 Tm (- Módulo: `business-unit`) Tj
+/F1 11 Tf 1 0 0 1 64.00 499.89 Tm (- Responsabilidad: representar una recomendación de desplazamiento.) Tj
+/F1 11 Tf 1 0 0 1 64.00 485.15 Tm (- Qué problema resuelve: empaqueta partido, destino, vuelos disponibles, vuelo) Tj
+/F1 11 Tf 1 0 0 1 64.00 470.41 Tm (  sugerido, motivo y nivel.) Tj
+/F1 11 Tf 1 0 0 1 64.00 455.67 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 440.93 Tm (- componentes del `record`,) Tj
+/F1 11 Tf 1 0 0 1 52.00 426.19 Tm (- enum `RecommendationLevel`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 411.45 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 396.71 Tm (- `DatamartRepository`) Tj
+/F1 11 Tf 1 0 0 1 52.00 381.97 Tm (- `BusinessUnitCli`) Tj
+/F1 11 Tf 1 0 0 1 64.00 367.23 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 352.49 Tm (- modela una lógica de negocio derivada del datamart.) Tj
+/F1 11 Tf 1 0 0 1 64.00 337.75 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 323.01 Tm (- cómo se decide entre `ALTA`, `MEDIA`, `BAJA` y `SIN_VUELOS`,) Tj
+/F1 11 Tf 1 0 0 1 52.00 308.27 Tm (- por qué esta recomendación es simple y no usa precios.) Tj
+/F2 13 Tf 1 0 0 1 52.00 284.53 Tm (NextTripView.java) Tj
+/F1 11 Tf 1 0 0 1 64.00 258.11 Tm (- Paquete: `org.ulpgc.dacd.business`) Tj
+/F1 11 Tf 1 0 0 1 64.00 243.37 Tm (- Módulo: `business-unit`) Tj
+/F1 11 Tf 1 0 0 1 64.00 228.63 Tm (- Responsabilidad: representar el siguiente desplazamiento con sus vuelos) Tj
+/F1 11 Tf 1 0 0 1 64.00 213.89 Tm (  asociados.) Tj
+/F1 11 Tf 1 0 0 1 64.00 199.15 Tm (- Qué problema resuelve: da una única estructura para la pantalla principal del) Tj
+/F1 11 Tf 1 0 0 1 64.00 184.41 Tm (  dashboard.) Tj
+/F1 11 Tf 1 0 0 1 64.00 169.67 Tm (- Métodos principales:) Tj
+/F1 11 Tf 1 0 0 1 52.00 154.93 Tm (- componentes del `record`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 140.19 Tm (- Dependencias/colaboradores:) Tj
+/F1 11 Tf 1 0 0 1 52.00 125.45 Tm (- `DatamartRepository`) Tj
+/F1 11 Tf 1 0 0 1 52.00 110.71 Tm (- `BusinessUnitWebServer`) Tj
+/F1 11 Tf 1 0 0 1 64.00 95.97 Tm (- Cómo encaja en el flujo general:) Tj
+/F1 11 Tf 1 0 0 1 52.00 81.23 Tm (- combina el siguiente partido con vuelos de ida, vuelos de vuelta y ventana) Tj
+ET
+endstream
+endobj
+22 0 obj
+<< /Length 3681 >>
+stream
+BT
+/F1 11 Tf 1 0 0 1 52.00 785.89 Tm (temporal.) Tj
+/F1 11 Tf 1 0 0 1 64.00 771.15 Tm (- Qué podría preguntar el profesor sobre esta clase:) Tj
+/F1 11 Tf 1 0 0 1 52.00 756.41 Tm (- por qué separar ida y vuelta,) Tj
+/F1 11 Tf 1 0 0 1 52.00 741.67 Tm (- qué significa `invalidMatchDate`.) Tj
+/F2 17 Tf 1 0 0 1 52.00 715.93 Tm (4. Flujo completo del sistema) Tj
+/F1 11 Tf 1 0 0 1 64.00 682.15 Tm (1. `Main` inicializa la base SQLite principal con `DatabaseInitializer`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 667.41 Tm (2. `AwayMatchService` usa `LaligaMatchScraper` para capturar próximos partidos.) Tj
+/F1 11 Tf 1 0 0 1 64.00 652.67 Tm (3. `AwayMatchService` filtra solo los partidos fuera de casa de la UD Las) Tj
+/F1 11 Tf 1 0 0 1 64.00 637.93 Tm (   Palmas.) Tj
+/F1 11 Tf 1 0 0 1 64.00 623.19 Tm (4. `AirportMapping` asigna automáticamente el aeropuerto de destino a partir del) Tj
+/F1 11 Tf 1 0 0 1 64.00 608.45 Tm (   equipo local.) Tj
+/F1 11 Tf 1 0 0 1 64.00 593.71 Tm (5. `AwayMatchRepository` guarda esos partidos en `away_matches`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 578.97 Tm (6. `AwayMatchService` publica eventos `AwayMatch` mediante) Tj
+/F1 11 Tf 1 0 0 1 64.00 564.23 Tm (   `ActiveMqEventPublisher`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 549.49 Tm (7. `FlightInfoService` lee los partidos guardados, calcula consultas de ida y) Tj
+/F1 11 Tf 1 0 0 1 64.00 534.75 Tm (   vuelta y usa `AenaFlightScraper`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 520.01 Tm (8. `FlightInfoRepository` guarda o actualiza los vuelos en `flight_infos`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 505.27 Tm (9. `FlightInfoService` publica eventos `FlightInfo` en ActiveMQ.) Tj
+/F1 11 Tf 1 0 0 1 64.00 490.53 Tm (10. `ActiveMqEventStoreSubscriber` consume ambos topics y `EventStoreWriter` los) Tj
+/F1 11 Tf 1 0 0 1 64.00 475.79 Tm (   guarda en `eventstore/{topic}/{ss}/{YYYYMMDD}.events`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 461.05 Tm (11. `BusinessUnitApp` arranca, crea el datamart con `DatamartInitializer` y lanza) Tj
+/F1 11 Tf 1 0 0 1 64.00 446.31 Tm (   una recarga histórica con `EventStoreDatamartLoader`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 431.57 Tm (12. `BusinessUnitEventSubscriber` se suscribe en vivo a ActiveMQ y actualiza el) Tj
+/F1 11 Tf 1 0 0 1 64.00 416.83 Tm (   datamart conforme llegan nuevos eventos.) Tj
+/F1 11 Tf 1 0 0 1 64.00 402.09 Tm (13. `DatamartRepository` sirve las consultas de negocio sobre `business_unit.db`.) Tj
+/F1 11 Tf 1 0 0 1 64.00 387.35 Tm (14. `BusinessUnitWebServer` expone API REST y dashboard web, que muestran el) Tj
+/F1 11 Tf 1 0 0 1 64.00 372.61 Tm (   siguiente desplazamiento y sus vuelos asociados.) Tj
+/F2 17 Tf 1 0 0 1 52.00 346.87 Tm (5. Qué clases defender en profundidad) Tj
+/F2 13 Tf 1 0 0 1 52.00 311.09 Tm (Main) Tj
+/F1 11 Tf 1 0 0 1 64.00 284.67 Tm (- Es importante porque demuestra la orquestación completa del sistema.) Tj
+/F1 11 Tf 1 0 0 1 64.00 269.93 Tm (- Permite explicar el orden de ejecución y por qué los módulos están) Tj
+/F1 11 Tf 1 0 0 1 64.00 255.19 Tm (  desacoplados.) Tj
+/F2 13 Tf 1 0 0 1 52.00 231.45 Tm (AwayMatchService) Tj
+/F1 11 Tf 1 0 0 1 64.00 205.03 Tm (- Es el ejemplo más claro de servicio de aplicación.) Tj
+/F1 11 Tf 1 0 0 1 64.00 190.29 Tm (- Combina fuente externa, regla de negocio, persistencia y publicación de) Tj
+/F1 11 Tf 1 0 0 1 64.00 175.55 Tm (  eventos.) Tj
+/F2 13 Tf 1 0 0 1 52.00 151.81 Tm (FlightInfoService) Tj
+/F1 11 Tf 1 0 0 1 64.00 125.39 Tm (- Es clave porque transforma un partido en varias consultas reales a AENA.) Tj
+/F1 11 Tf 1 0 0 1 64.00 110.65 Tm (- Ahí se entiende bien la lógica de ida y vuelta y el filtrado por fechas del) Tj
+/F1 11 Tf 1 0 0 1 64.00 95.91 Tm (  desplazamiento.) Tj
+/F2 13 Tf 1 0 0 1 52.00 72.17 Tm (AenaFlightScraper) Tj
+ET
+endstream
+endobj
+23 0 obj
+<< /Length 2879 >>
+stream
+BT
+/F1 11 Tf 1 0 0 1 64.00 785.89 Tm (- Es una de las clases más técnicas del proyecto.) Tj
+/F1 11 Tf 1 0 0 1 64.00 771.15 Tm (- Permite defender HTTP, parseo JSON, filtrado, normalización y tratamiento de) Tj
+/F1 11 Tf 1 0 0 1 64.00 756.41 Tm (  fallos reales.) Tj
+/F2 13 Tf 1 0 0 1 52.00 732.67 Tm (ActiveMqEventPublisher) Tj
+/F1 11 Tf 1 0 0 1 64.00 706.25 Tm (- Es importante para explicar la parte de Publisher/Subscriber.) Tj
+/F1 11 Tf 1 0 0 1 64.00 691.51 Tm (- Justifica el uso de eventos persistentes y topics.) Tj
+/F2 13 Tf 1 0 0 1 52.00 667.77 Tm (ActiveMqEventStoreSubscriber) Tj
+/F1 11 Tf 1 0 0 1 64.00 641.35 Tm (- Es clave para explicar el Event Store Builder.) Tj
+/F1 11 Tf 1 0 0 1 64.00 626.61 Tm (- Permite hablar de suscripción durable y reconexión.) Tj
+/F2 13 Tf 1 0 0 1 52.00 602.87 Tm (EventStoreWriter) Tj
+/F1 11 Tf 1 0 0 1 64.00 576.45 Tm (- Es la clase que materializa el patrón Event Store.) Tj
+/F1 11 Tf 1 0 0 1 64.00 561.71 Tm (- Sirve para justificar el formato NDJSON y la organización por) Tj
+/F1 11 Tf 1 0 0 1 64.00 546.97 Tm (  topic/fuente/fecha.) Tj
+/F2 13 Tf 1 0 0 1 52.00 523.23 Tm (EventStoreDatamartLoader) Tj
+/F1 11 Tf 1 0 0 1 64.00 496.81 Tm (- Es fundamental para explicar por qué la arquitectura es Lambda simplificada y) Tj
+/F1 11 Tf 1 0 0 1 64.00 482.07 Tm (  no solo streaming.) Tj
+/F1 11 Tf 1 0 0 1 64.00 467.33 Tm (- Permite reconstruir el datamart desde histórico.) Tj
+/F2 13 Tf 1 0 0 1 52.00 443.59 Tm (DatamartRepository) Tj
+/F1 11 Tf 1 0 0 1 64.00 417.17 Tm (- Es el corazón de la business unit.) Tj
+/F1 11 Tf 1 0 0 1 64.00 402.43 Tm (- Aquí están los upserts, las consultas de negocio y la deduplicación.) Tj
+/F2 13 Tf 1 0 0 1 52.00 378.69 Tm (BusinessUnitEventSubscriber) Tj
+/F1 11 Tf 1 0 0 1 64.00 352.27 Tm (- Es importante porque conecta la capa de eventos en vivo con el datamart.) Tj
+/F1 11 Tf 1 0 0 1 64.00 337.53 Tm (- Permite explicar robustez, reconexión y actualización continua.) Tj
+/F2 13 Tf 1 0 0 1 52.00 313.79 Tm (BusinessUnitWebServer) Tj
+/F1 11 Tf 1 0 0 1 64.00 287.37 Tm (- Es la clase más visible para la demo.) Tj
+/F1 11 Tf 1 0 0 1 64.00 272.63 Tm (- Permite defender la interfaz final, la API REST y el dashboard público.) Tj
+/F2 17 Tf 1 0 0 1 52.00 246.89 Tm (6. Preguntas típicas del profesor) Tj
+/F2 13 Tf 1 0 0 1 52.00 211.11 Tm (¿Por qué arquitectura Lambda y no Kappa?) Tj
+/F1 11 Tf 1 0 0 1 52.00 184.69 Tm (Porque el sistema combina dos caminos hacia el datamart:) Tj
+/F1 11 Tf 1 0 0 1 64.00 162.95 Tm (- uno en vivo desde ActiveMQ,) Tj
+/F1 11 Tf 1 0 0 1 64.00 148.21 Tm (- otro histórico desde el event store.) Tj
+/F1 11 Tf 1 0 0 1 52.00 126.47 Tm (Eso encaja mejor con una Lambda simplificada que con una Kappa pura.) Tj
+/F2 13 Tf 1 0 0 1 52.00 102.73 Tm (¿Qué es ActiveMQ?) Tj
+/F1 11 Tf 1 0 0 1 52.00 76.31 Tm (Es el broker de mensajería del sistema. Recibe los eventos publicados por los) Tj
+ET
+endstream
+endobj
+24 0 obj
+<< /Length 3204 >>
+stream
+BT
+/F1 11 Tf 1 0 0 1 52.00 785.89 Tm (feeders y permite que otros módulos los consuman de forma desacoplada.) Tj
+/F2 13 Tf 1 0 0 1 52.00 762.15 Tm (¿Qué es un topic?) Tj
+/F1 11 Tf 1 0 0 1 52.00 735.73 Tm (Es un canal de publicación/suscripción. En este proyecto hay dos: `AwayMatch` y) Tj
+/F1 11 Tf 1 0 0 1 52.00 720.99 Tm (`FlightInfo`.) Tj
+/F2 13 Tf 1 0 0 1 52.00 697.25 Tm (¿Qué es una suscripción durable?) Tj
+/F1 11 Tf 1 0 0 1 52.00 670.83 Tm (Es una suscripción JMS que mantiene el estado aunque el subscriber se) Tj
+/F1 11 Tf 1 0 0 1 52.00 656.09 Tm (desconecte. Cuando vuelve a conectarse con el mismo `clientId`, puede recuperar) Tj
+/F1 11 Tf 1 0 0 1 52.00 641.35 Tm (mensajes pendientes.) Tj
+/F2 13 Tf 1 0 0 1 52.00 617.61 Tm (¿Qué es el event store?) Tj
+/F1 11 Tf 1 0 0 1 52.00 591.19 Tm (Es el histórico de eventos guardado en disco. Aquí se almacena como NDJSON en) Tj
+/F1 11 Tf 1 0 0 1 52.00 576.45 Tm (ficheros `.events`, organizados por topic, fuente y día.) Tj
+/F2 13 Tf 1 0 0 1 52.00 552.71 Tm (¿Qué es el datamart?) Tj
+/F1 11 Tf 1 0 0 1 52.00 526.29 Tm (Es una base orientada a consulta, construida para responder rápido a la UI y a) Tj
+/F1 11 Tf 1 0 0 1 52.00 511.55 Tm (la API. En este proyecto es `business_unit.db`.) Tj
+/F2 13 Tf 1 0 0 1 52.00 487.81 Tm (¿Por qué SQLite?) Tj
+/F1 11 Tf 1 0 0 1 52.00 461.39 Tm (Porque el proyecto está pensado para ejecución local, demo y consultas rápidas) Tj
+/F1 11 Tf 1 0 0 1 52.00 446.65 Tm (sin depender de una infraestructura pesada de base de datos.) Tj
+/F2 13 Tf 1 0 0 1 52.00 422.91 Tm (¿Cómo se evitan duplicados?) Tj
+/F1 11 Tf 1 0 0 1 64.00 396.49 Tm (- En `flight_infos` y `flight_infos_datamart` mediante índices únicos y upsert.) Tj
+/F1 11 Tf 1 0 0 1 64.00 381.75 Tm (- En la consulta pública, además, `DatamartRepository` deduplica partidos y) Tj
+/F1 11 Tf 1 0 0 1 64.00 367.01 Tm (  vuelos con claves lógicas normalizadas.) Tj
+/F2 13 Tf 1 0 0 1 52.00 343.27 Tm (¿Qué pasa si ActiveMQ se cae?) Tj
+/F1 11 Tf 1 0 0 1 64.00 316.85 Tm (- Los feeders pueden seguir guardando en SQLite local.) Tj
+/F1 11 Tf 1 0 0 1 64.00 302.11 Tm (- El Event Store Builder reintenta conexión.) Tj
+/F1 11 Tf 1 0 0 1 64.00 287.37 Tm (- La Business Unit sigue pudiendo arrancar con el histórico del event store y) Tj
+/F1 11 Tf 1 0 0 1 64.00 272.63 Tm (  reintenta la sincronización en vivo.) Tj
+/F2 13 Tf 1 0 0 1 52.00 248.89 Tm (¿Qué pasa si AENA falla?) Tj
+/F1 11 Tf 1 0 0 1 52.00 222.47 Tm (No se inventan vuelos. El sistema muestra mensajes claros y, en la web, botones) Tj
+/F1 11 Tf 1 0 0 1 52.00 207.73 Tm (de búsqueda alternativa si no hay vuelos cargados.) Tj
+/F2 13 Tf 1 0 0 1 52.00 183.99 Tm (¿Cómo se reconstruye el datamart?) Tj
+/F1 11 Tf 1 0 0 1 52.00 157.57 Tm (`EventStoreDatamartLoader` recorre `eventstore/`, lee cada línea JSON y vuelve) Tj
+/F1 11 Tf 1 0 0 1 52.00 142.83 Tm (a aplicar upserts sobre `business_unit.db`.) Tj
+/F2 13 Tf 1 0 0 1 52.00 119.09 Tm (¿Qué aporta la business-unit al usuario final?) Tj
+/F1 11 Tf 1 0 0 1 52.00 92.67 Tm (Transforma datos técnicos de múltiples fuentes en una experiencia útil:) Tj
+/F1 11 Tf 1 0 0 1 52.00 77.93 Tm (siguiente partido fuera, vuelos cercanos, enlace oficial de entrada y dashboard) Tj
+ET
+endstream
+endobj
+25 0 obj
+<< /Length 2880 >>
+stream
+BT
+/F1 11 Tf 1 0 0 1 52.00 785.89 Tm (web claro.) Tj
+/F2 17 Tf 1 0 0 1 52.00 760.15 Tm (7. Clases listadas y comprobación) Tj
+/F1 11 Tf 1 0 0 1 52.00 726.37 Tm (Se han encontrado las clases pedidas en el proyecto:) Tj
+/F1 11 Tf 1 0 0 1 64.00 704.63 Tm (- `Main`) Tj
+/F1 11 Tf 1 0 0 1 64.00 689.89 Tm (- `DatabaseInitializer`) Tj
+/F1 11 Tf 1 0 0 1 64.00 675.15 Tm (- `Match`) Tj
+/F1 11 Tf 1 0 0 1 64.00 660.41 Tm (- `FlightInfo`) Tj
+/F1 11 Tf 1 0 0 1 64.00 645.67 Tm (- `AirportMapping`) Tj
+/F1 11 Tf 1 0 0 1 64.00 630.93 Tm (- `DatabaseConfig`) Tj
+/F1 11 Tf 1 0 0 1 64.00 616.19 Tm (- `EventMessage`) Tj
+/F1 11 Tf 1 0 0 1 64.00 601.45 Tm (- `EventTopics`) Tj
+/F1 11 Tf 1 0 0 1 64.00 586.71 Tm (- `EventPublisher`) Tj
+/F1 11 Tf 1 0 0 1 64.00 571.97 Tm (- `ActiveMqEventPublisher`) Tj
+/F1 11 Tf 1 0 0 1 64.00 557.23 Tm (- `AwayMatchService`) Tj
+/F1 11 Tf 1 0 0 1 64.00 542.49 Tm (- `AwayMatchRepository`) Tj
+/F1 11 Tf 1 0 0 1 64.00 527.75 Tm (- `LaligaMatchScraper`) Tj
+/F1 11 Tf 1 0 0 1 64.00 513.01 Tm (- `MatchClient`) Tj
+/F1 11 Tf 1 0 0 1 64.00 498.27 Tm (- `OneboxTicketLinkProvider`) Tj
+/F1 11 Tf 1 0 0 1 64.00 483.53 Tm (- `AenaFlightScraper`) Tj
+/F1 11 Tf 1 0 0 1 64.00 468.79 Tm (- `AenaLcgDebugRunner`) Tj
+/F1 11 Tf 1 0 0 1 64.00 454.05 Tm (- `FlightInfoService`) Tj
+/F1 11 Tf 1 0 0 1 64.00 439.31 Tm (- `FlightInfoRepository`) Tj
+/F1 11 Tf 1 0 0 1 64.00 424.57 Tm (- `EventStoreBuilderApp`) Tj
+/F1 11 Tf 1 0 0 1 64.00 409.83 Tm (- `ActiveMqEventStoreSubscriber`) Tj
+/F1 11 Tf 1 0 0 1 64.00 395.09 Tm (- `EventStoreWriter`) Tj
+/F1 11 Tf 1 0 0 1 64.00 380.35 Tm (- `EventStoreManualPublisher`) Tj
+/F1 11 Tf 1 0 0 1 64.00 365.61 Tm (- `BusinessUnitApp`) Tj
+/F1 11 Tf 1 0 0 1 64.00 350.87 Tm (- `BusinessUnitConfig`) Tj
+/F1 11 Tf 1 0 0 1 64.00 336.13 Tm (- `BusinessUnitCli`) Tj
+/F1 11 Tf 1 0 0 1 64.00 321.39 Tm (- `BusinessUnitWebServer`) Tj
+/F1 11 Tf 1 0 0 1 64.00 306.65 Tm (- `BusinessUnitEventSubscriber`) Tj
+/F1 11 Tf 1 0 0 1 64.00 291.91 Tm (- `DatamartInitializer`) Tj
+/F1 11 Tf 1 0 0 1 64.00 277.17 Tm (- `DatamartRepository`) Tj
+/F1 11 Tf 1 0 0 1 64.00 262.43 Tm (- `DatamartSummary`) Tj
+/F1 11 Tf 1 0 0 1 64.00 247.69 Tm (- `EventStoreDatamartLoader`) Tj
+/F1 11 Tf 1 0 0 1 64.00 232.95 Tm (- `DatamartLoadResult`) Tj
+/F1 11 Tf 1 0 0 1 64.00 218.21 Tm (- `AwayMatchView`) Tj
+/F1 11 Tf 1 0 0 1 64.00 203.47 Tm (- `FlightInfoView`) Tj
+/F1 11 Tf 1 0 0 1 64.00 188.73 Tm (- `TravelRecommendation`) Tj
+/F1 11 Tf 1 0 0 1 64.00 173.99 Tm (- `NextTripView`) Tj
+/F1 11 Tf 1 0 0 1 52.00 152.25 Tm (Además, se han encontrado clases adicionales útiles para la defensa:) Tj
+/F1 11 Tf 1 0 0 1 64.00 130.51 Tm (- `FlightOffer`) Tj
+/F1 11 Tf 1 0 0 1 64.00 115.77 Tm (- `ResidentDiscountCalculator`) Tj
+/F1 11 Tf 1 0 0 1 64.00 101.03 Tm (- `FlightInfoScraper`) Tj
+/F1 11 Tf 1 0 0 1 52.00 79.29 Tm (No se incluyen `package-info.java` porque no contienen lógica de aplicación,) Tj
+ET
+endstream
+endobj
+26 0 obj
+<< /Length 71 >>
+stream
+BT
+/F1 11 Tf 1 0 0 1 52.00 785.89 Tm (solo metadatos de paquete.) Tj
+ET
+endstream
+endobj
+27 0 obj
+<< /Type /Page /Parent 51 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 3 0 R >>
+endobj
+28 0 obj
+<< /Type /Page /Parent 51 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 4 0 R >>
+endobj
+29 0 obj
+<< /Type /Page /Parent 51 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 5 0 R >>
+endobj
+30 0 obj
+<< /Type /Page /Parent 51 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 6 0 R >>
+endobj
+31 0 obj
+<< /Type /Page /Parent 51 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 7 0 R >>
+endobj
+32 0 obj
+<< /Type /Page /Parent 51 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 8 0 R >>
+endobj
+33 0 obj
+<< /Type /Page /Parent 51 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 9 0 R >>
+endobj
+34 0 obj
+<< /Type /Page /Parent 51 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 10 0 R >>
+endobj
+35 0 obj
+<< /Type /Page /Parent 51 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 11 0 R >>
+endobj
+36 0 obj
+<< /Type /Page /Parent 51 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 12 0 R >>
+endobj
+37 0 obj
+<< /Type /Page /Parent 51 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 13 0 R >>
+endobj
+38 0 obj
+<< /Type /Page /Parent 51 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 14 0 R >>
+endobj
+39 0 obj
+<< /Type /Page /Parent 51 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 15 0 R >>
+endobj
+40 0 obj
+<< /Type /Page /Parent 51 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 16 0 R >>
+endobj
+41 0 obj
+<< /Type /Page /Parent 51 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 17 0 R >>
+endobj
+42 0 obj
+<< /Type /Page /Parent 51 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 18 0 R >>
+endobj
+43 0 obj
+<< /Type /Page /Parent 51 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 19 0 R >>
+endobj
+44 0 obj
+<< /Type /Page /Parent 51 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 20 0 R >>
+endobj
+45 0 obj
+<< /Type /Page /Parent 51 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 21 0 R >>
+endobj
+46 0 obj
+<< /Type /Page /Parent 51 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 22 0 R >>
+endobj
+47 0 obj
+<< /Type /Page /Parent 51 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 23 0 R >>
+endobj
+48 0 obj
+<< /Type /Page /Parent 51 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 24 0 R >>
+endobj
+49 0 obj
+<< /Type /Page /Parent 51 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 25 0 R >>
+endobj
+50 0 obj
+<< /Type /Page /Parent 51 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 26 0 R >>
+endobj
+51 0 obj
+<< /Type /Pages /Kids [27 0 R 28 0 R 29 0 R 30 0 R 31 0 R 32 0 R 33 0 R 34 0 R 35 0 R 36 0 R 37 0 R 38 0 R 39 0 R 40 0 R 41 0 R 42 0 R 43 0 R 44 0 R 45 0 R 46 0 R 47 0 R 48 0 R 49 0 R 50 0 R] /Count 24 >>
+endobj
+52 0 obj
+<< /Type /Catalog /Pages 51 0 R >>
+endobj
+xref
+0 53
+0000000000 65535 f 
+0000000015 00000 n 
+0000000085 00000 n 
+0000000160 00000 n 
+0000003539 00000 n 
+0000006973 00000 n 
+0000010521 00000 n 
+0000014100 00000 n 
+0000017642 00000 n 
+0000021268 00000 n 
+0000024784 00000 n 
+0000028243 00000 n 
+0000031825 00000 n 
+0000035373 00000 n 
+0000038904 00000 n 
+0000042315 00000 n 
+0000045873 00000 n 
+0000049388 00000 n 
+0000053046 00000 n 
+0000056456 00000 n 
+0000059991 00000 n 
+0000063576 00000 n 
+0000067171 00000 n 
+0000070905 00000 n 
+0000073837 00000 n 
+0000077094 00000 n 
+0000080027 00000 n 
+0000080149 00000 n 
+0000080293 00000 n 
+0000080437 00000 n 
+0000080581 00000 n 
+0000080725 00000 n 
+0000080869 00000 n 
+0000081013 00000 n 
+0000081157 00000 n 
+0000081302 00000 n 
+0000081447 00000 n 
+0000081592 00000 n 
+0000081737 00000 n 
+0000081882 00000 n 
+0000082027 00000 n 
+0000082172 00000 n 
+0000082317 00000 n 
+0000082462 00000 n 
+0000082607 00000 n 
+0000082752 00000 n 
+0000082897 00000 n 
+0000083042 00000 n 
+0000083187 00000 n 
+0000083332 00000 n 
+0000083477 00000 n 
+0000083622 00000 n 
+0000083843 00000 n 
+trailer
+<< /Size 53 /Root 52 0 R >>
+startxref
+83894
+%%EOF

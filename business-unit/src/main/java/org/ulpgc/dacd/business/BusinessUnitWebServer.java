@@ -20,6 +20,7 @@ public class BusinessUnitWebServer {
     private static final String LOGO_RESOURCE_PATH = "static/piopio_fon_trans.png";
     private static final String LOGO_WEB_PATH = "/static/piopio_fon_trans.png";
     private static final String AWAY_TICKET_URL = "https://tickets.oneboxtds.com/udlpdesplazamientos/events?from=2026-05-18T23:00:00.000Z&to=2026-08-31T22:59:59.999Z";
+    private static final String OUTBOUND_FLIGHT_URL = "https://www.google.com/travel/flights/booking?tfs=CBwQAhpGEgoyMDI2LTA1LTMwIiAKA0xQQRIKMjAyNi0wNS0zMBoDTENHKgJWWTIEODk5MWoNCAISCS9tLzAxNXJ6N3IHCAESA0xDR0ABSAFwAYIBCwj___________8BmAEC&tfu=CmxDalJJTFdOWFRGaE5kMnAyWWpSQlEwWkZhRUZDUnkwdExTMHRMUzB0TFhkaVltVjVPRUZCUVVGQlIyOVFPVk5CVEhkclNEWkJFZ1pXV1RnNU9URWFDd2pldWdRUUFob0RSVlZTT0J4dzdKWUYSBggAIAEoAiIDCgEw&hl=es&gl=ES";
 
     private final DatamartRepository datamartRepository;
     private final EventStoreDatamartLoader eventStoreDatamartLoader;
@@ -632,7 +633,7 @@ public class BusinessUnitWebServer {
                                 <div id="nextTrip"></div>
                             </article>
                             <article class="card">
-                                <div class="section-title"><h2>Vuelos del desplazamiento</h2></div>
+                                <div class="section-title"><h2>Vuelos de ida del desplazamiento</h2></div>
                                 <div id="nextTripFlights"></div>
                             </article>
                         </section>
@@ -640,6 +641,7 @@ public class BusinessUnitWebServer {
 
                     <script>
                         const awayTicketUrl = "__AWAY_TICKET_URL__";
+                        const outboundFlightUrl = "__OUTBOUND_FLIGHT_URL__";
 
                         function display(value) {
                             return value === null || value === undefined || String(value).trim() === '' ? 'N/D' : value;
@@ -704,7 +706,6 @@ public class BusinessUnitWebServer {
                             }
 
                             const outboundFlights = uniqueFlights(trip.outboundFlights || []);
-                            const returnFlights = uniqueFlights(trip.returnFlights || []);
                             const destinationAirport = cleanValue(trip.match.destinationAirport);
                             container.innerHTML = `
                                 ${renderFlightSection(
@@ -727,20 +728,6 @@ public class BusinessUnitWebServer {
                                         }
                                     ]
                                 )}
-                                ${renderFlightSection(
-                                    'Vuelos de vuelta',
-                                    `Buscando vuelos de vuelta para ${display(trip.returnDate)}`,
-                                    returnFlights,
-                                    'No hay vuelos de vuelta cargados desde AENA para el d&iacute;a siguiente al partido.',
-                                    [
-                                        {
-                                            label: 'Buscar vuelta',
-                                            origin: destinationAirport,
-                                            destination: 'LPA',
-                                            date: cleanValue(trip.returnDate)
-                                        }
-                                    ]
-                                )}
                             `;
                         }
 
@@ -756,7 +743,7 @@ public class BusinessUnitWebServer {
                                     display(flight.destinationAirport),
                                     display(flight.status),
                                     display(flight.terminal),
-                                    `<a class="button-link" href="${buildSpecificFlightSearchUrl(flight)}" target="_blank" rel="noopener noreferrer">Ver vuelo</a>`
+                                    `<a class="button-link" href="${buildSpecificFlightSearchUrl(flight)}" target="_blank" rel="noopener noreferrer">Consultar vuelo</a>`
                                 ]),
                                 true
                             )
@@ -817,26 +804,7 @@ public class BusinessUnitWebServer {
                         }
 
                         function buildSpecificFlightSearchUrl(flight) {
-                            const flightNumber = getFlightValue(flight, 'flightNumber', 'flight_number');
-                            const airline = getFlightValue(flight, 'airline', 'airline');
-                            const origin = getFlightValue(flight, 'originAirport', 'origin_airport');
-                            const destination = getFlightValue(flight, 'destinationAirport', 'destination_airport');
-                            const scheduledDateTime = getFlightValue(flight, 'scheduledDateTime', 'scheduled_datetime');
-                            const date = scheduledDateTime && scheduledDateTime.length >= 10
-                                ? scheduledDateTime.substring(0, 10)
-                                : '';
-
-                            const queryParts = [
-                                'Google Flights',
-                                flightNumber,
-                                airline,
-                                origin,
-                                'to',
-                                destination,
-                                date
-                            ].filter(Boolean);
-
-                            return `https://www.google.com/search?q=${encodeURIComponent(queryParts.join(' '))}`;
+                            return outboundFlightUrl;
                         }
 
                         function getFlightValue(flight, camelCaseName, snakeCaseName) {
@@ -861,7 +829,7 @@ public class BusinessUnitWebServer {
                         }
 
                         function matchKey(match) {
-                            return `${normalize(match.homeTeam)}|${normalize(match.awayTeam)}|${normalizeDateTime(match.matchDate)}|${normalize(match.stadium)}|${normalize(match.destinationAirport)}`;
+                            return `${normalize(match.homeTeam)}|${normalize(match.awayTeam)}|${normalizeMatchDate(match.matchDate)}|${normalize(match.stadium)}|${normalize(match.destinationAirport)}`;
                         }
 
                         function uniqueFlights(flights) {
@@ -886,6 +854,14 @@ public class BusinessUnitWebServer {
                             return Number.isNaN(date.getTime()) ? normalize(value) : date.toISOString().slice(0, 16);
                         }
 
+                        function normalizeMatchDate(value) {
+                            if (value === null || value === undefined || String(value).trim() === '') {
+                                return '';
+                            }
+                            const date = new Date(value);
+                            return Number.isNaN(date.getTime()) ? normalize(value).slice(0, 10) : date.toISOString().slice(0, 10);
+                        }
+
                         function escapeHtml(value) {
                             return String(value)
                                 .replaceAll('&', '&amp;')
@@ -899,6 +875,7 @@ public class BusinessUnitWebServer {
                     </script>
                 </body>
                 </html>
-                """.replace("__AWAY_TICKET_URL__", AWAY_TICKET_URL);
+                """.replace("__AWAY_TICKET_URL__", AWAY_TICKET_URL)
+                .replace("__OUTBOUND_FLIGHT_URL__", OUTBOUND_FLIGHT_URL);
     }
 }

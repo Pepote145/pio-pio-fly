@@ -32,6 +32,7 @@ Y, más adelante, que te **avise** cuando baje el vuelo.
 | Frontend | **Web-app: React + Vite + TypeScript, PWA** | Instalable en el móvil sin tiendas; fácil de compartir con la peña |
 | Precios de vuelos | **Travelpayouts (Aviasales Data API)** principal; **SerpApi Google Flights** como verificación | Gratis y pensado para "el más barato"; comisión de afiliado. Amadeus Self-Service cerró el 17-jul-2026 y Kiwi Tequila solo admite partners |
 | Paquete Java | `com.piopiofly` (antes `org.ulpgc.dacd`) | Ya no es un proyecto de la universidad |
+| Tests con base de datos | PostgreSQL embebido (zonky) | PostgreSQL real sin necesidad de Docker |
 
 ## 3. Arquitectura objetivo
 
@@ -40,7 +41,7 @@ Y, más adelante, que te **avise** cuando baje el vuelo.
 │  frontend/ (React PWA) │  REST  │  backend/ (Spring Boot)                  │
 │  - Próximos partidos   │ ─────► │                                          │
 │  - Detalle del viaje   │        │  matches   ← FixtureProvider (LaLiga)    │
-│  - Gráfica de precios  │        │  venues    ← equipos, estadios, aeropuertos
+│  - Gráfica de precios  │        │  airports  ← aeropuertos por rival       │
 └────────────────────────┘        │  flights   ← FlightPriceProvider         │
                                   │               (Travelpayouts, SerpApi)   │
                                   │  tickets   ← enlace Onebox por partido   │
@@ -67,7 +68,7 @@ Principios:
 ```text
 pio-pio-fly/
 ├── backend/            Spring Boot (Maven wrapper)
-│   └── src/main/java/com/piopiofly/{matches,venues,flights,tickets,trips,jobs}
+│   └── src/main/java/com/piopiofly/{matches,airports,flights,tickets,trips,config}
 ├── frontend/           React + Vite + TypeScript
 ├── docs/               ROADMAP.md, decisiones, notas de APIs
 ├── .github/workflows/  CI: build + tests de backend y frontend
@@ -79,9 +80,8 @@ pio-pio-fly/
 
 | Tabla | Campos clave | Notas |
 |---|---|---|
-| `venue` | equipo, alias[], ciudad, estadio, lat/lon | Sustituye a `AirportMapping`. Datos de la temporada en migración/seed, no en código |
-| `venue_airport` | venue, aeropuerto IATA, prioridad, tiempo de traslado | Varios aeropuertos por destino (p. ej. Eibar → BIO o VIT) |
-| `match` | competición, temporada, local, visitante, `kickoff_at` (nullable), `date_status` (PROVISIONAL / CONFIRMED), `window_start`/`window_end`, fuente, ref. externa | Único por (fuente, ref. externa): **se acabaron los duplicados** |
+| `away_match` ✅ | fuente, id externo, competición, temporada, jornada, rival (slug + nombre), `match_date`, `kickoff_at` (nullable → fecha provisional), estadio, ciudad, lat/lon | Único por (fuente, id externo): **se acabaron los duplicados**. Estadio, ciudad y coordenadas vienen de LaLiga |
+| `team_airport` ✅ | slug del rival en laliga.com, aeropuerto IATA, prioridad, nota | Sustituye a `AirportMapping`. Varios aeropuertos por destino; datos de temporada en migración Flyway |
 | `price_snapshot` | partido, sentido (IDA/VUELTA), origen, destino, fecha de vuelo, precio €, aerolínea, escalas, proveedor, enlace, `captured_at` | Histórico → gráfica y alertas. Es la evolución natural del antiguo event store |
 | `ticket_info` *(fase 3)* | partido, URL, estado, precio desde, `checked_at` | |
 | `alert_subscription` *(fase 4)* | contacto, partido o "todos", umbral € | |
@@ -117,9 +117,13 @@ Se mantiene la identidad actual: amarillo y azul UD, el logo y el "¡Arriba d'el
 
 ## 7. Fases
 
-### Fase 0 — Repo sano y base limpia
+### Fase 0 — Repo sano y base limpia ✅ (28-sep-2026)
 
 **Objetivo:** cimientos sólidos sobre los que construir rápido.
+
+**Resultado:** git recuperado; tag `v1.0-dacd`; backend Spring Boot 4.1 + Java 25 con 14 tests (PostgreSQL embebido); frontend Vite mínimo; CI. Contra laliga.com real: 17 partidos fuera de la temporada 2026/27, todos con aeropuerto y sin duplicados. El scraper lee ahora el JSON `__NEXT_DATA__` de la página, en lugar de la tabla HTML.
+
+**Pendiente conocido:** LaLiga devuelve "Andalusia" como ciudad del Córdoba CF; habrá que corregir la ciudad en origen o con una tabla de excepciones.
 
 1. **Recuperar git**
    - Guardar el `.git` roto como `.git-roto-backup` y poner el de GitHub (los 29 commits están intactos allí).
@@ -131,8 +135,8 @@ Se mantiene la identidad actual: amarillo y azul UD, el logo y el "¡Arriba d'el
    - PostgreSQL local vía Homebrew, Flyway y `.env.example`.
    - Tests: JUnit 5 + AssertJ; para la base de datos, PostgreSQL embebido (sin Docker).
 4. **Migrar lo valioso del código actual**
-   - `AirportMapping` → tablas `venue` / `venue_airport`, actualizadas a la temporada 2026/27.
-   - `LaligaMatchScraper` → `LaligaFixtureProvider`, probado con un HTML guardado y rellenando ciudad y estadio desde `venue`.
+   - `AirportMapping` → tabla `team_airport`, actualizada a la temporada 2026/27.
+   - `LaligaMatchScraper` → `LaligaFixtureProvider`, probado con un HTML guardado; ciudad y estadio vienen ya en los datos de LaLiga.
    - `ResidentDiscountCalculator` → `ResidentDiscount`.
    - El logo y los colores.
 5. **Retirar** los módulos `app`, `domain`, `matches-source`, `flights-source`, `event-store-builder` y `business-unit`. Quedan en el tag.
